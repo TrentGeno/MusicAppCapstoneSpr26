@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resonance - Music App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Work+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">Resonance</div>
+            <nav>
+                <a href="#library">Library</a>
+                <a href="#playlists">Playlists</a>
+                <a href="#artists">Artists</a>
+            </nav>
+            <button class="btn btn-signin" id="signInBtn">Sign In</button>
+        </header>
+
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Your Personal Music Library</h1>
+                    <p>Upload your downloaded music collection and organize it beautifully. Create playlists, manage your library, and enjoy your favorite tracks offline.</p>
+                    <div class="cta-buttons">
+                        <button class="btn btn-primary" id="uploadMusicBtn">Upload Music</button>
+                        <button class="btn btn-secondary" id="createPlaylistBtn">Create Playlist</button>
+                    </div>
+                    <input type="file" id="musicFileInput" accept="audio/*" multiple style="display: none;">
+                </div>
+                <div class="hero-visual">
+                    <div class="vinyl-container">
+                        <div class="vinyl"></div>
+                        <div class="album-art">🎵</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="featured">
+            <div class="section-header">
+                <h2>Your Library</h2>
+                <a href="#" class="view-all" id="addSongsLink">Add Songs →</a>
+            </div>
+            <div class="music-grid" id="libraryGrid">
+                <!-- Songs will be dynamically added here -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📁</div>
+                    <h3>Your library is empty</h3>
+                    <p>Upload your music files to get started</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('uploadMusicBtn').click()">Upload Now</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="featured">
+            <div class="section-header">
+                <h2>Your Playlists</h2>
+                <a href="#" class="view-all" id="newPlaylistLink">New Playlist →</a>
+            </div>
+            <div class="music-grid" id="playlistGrid">
+                <div class="empty-state">
+                    <div class="empty-icon">🎧</div>
+                    <h3>No playlists yet</h3>
+                    <p>Create your first playlist to organize your music</p>
+                    <button class="btn btn-primary" id="createPlaylistBtn2">Create Playlist</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Sign In Modal -->
+    <div class="modal" id="signInModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Sign In</h2>
+                <button class="close-modal" onclick="closeModal('signInModal')">×</button>
+            </div>
+            <form id="signInForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+                <p style="text-align: center; margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    Don't have an account? <a href="#" style="color: var(--accent-purple);">Sign up</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upload Music Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Music</h2>
+                <button class="close-modal" onclick="closeModal('uploadModal')">×</button>
+            </div>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <h3 style="margin-bottom: 0.5rem;">Drop your music files here</h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">or click to browse</p>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">
+                    Supported formats: MP3, WAV, FLAC, M4A
+                </p>
+            </div>
+            <div class="file-list" id="fileList"></div>
+            <button class="btn btn-primary" id="uploadFilesBtn" style="width: 100%; margin-top: 1rem;" disabled>
+                Upload Files
+            </button>
+        </div>
+    </div>
+
+    <!-- Create Playlist Modal -->
+    <div class="modal" id="playlistModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create Playlist</h2>
+                <button class="close-modal" onclick="closeModal('playlistModal')">×</button>
+            </div>
+            <form id="playlistForm">
+                <div class="form-group">
+                    <label for="playlistName">Playlist Name</label>
+                    <input type="text" id="playlistName" placeholder="My Awesome Playlist" required>
+                </div>
+                <div class="form-group">
+                    <label for="playlistDescription">Description (Optional)</label>
+                    <input type="text" id="playlistDescription" placeholder="A collection of my favorite tracks">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Create Playlist</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let uploadedFiles = [];
+        let library = [];
+        let playlists = [];
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Click outside to close
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+
+        // Sign In
+        document.getElementById('signInBtn').addEventListener('click', () => {
+            openModal('signInModal');
+        });
+
+        document.getElementById('signInForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Send to Flask backend
+            try {
+                const response = await fetch('http://localhost:5000/signin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                console.log('Sign in response:', data);
+                closeModal('signInModal');
+                // Handle successful sign in (store token, update UI, etc.)
+            } catch (error) {
+                console.error('Sign in error:', error);
+                alert('Sign in failed. Please check your credentials.');
+            }
+        });
+
+        // Upload Music
+        document.getElementById('uploadMusicBtn').addEventListener('click', () => {
+            openModal('uploadModal');
+        });
+
+        document.getElementById('addSongsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal('uploadModal');
+        });
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileList = document.getElementById('fileList');
+        const uploadFilesBtn = document.getElementById('uploadFilesBtn');
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'audio/*';
+            input.multiple = true;
+            input.onchange = (e) => handleFiles(e.target.files);
+            input.click();
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        function handleFiles(files) {
+            uploadedFiles = Array.from(files);
+            displayFileList();
+            uploadFilesBtn.disabled = uploadedFiles.length === 0;
+        }
+
+        function displayFileList() {
+            fileList.innerHTML = '';
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>🎵 ${file.name}</span>
+                    <button class="remove-file" onclick="removeFile(${index})">×</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            displayFileList();
+            uploadFilesBtn.disabled = uploadedFiles.length === 0;
+        }
+
+        uploadFilesBtn.addEventListener('click', async () => {
+            const formData = new FormData();
+            uploadedFiles.forEach(file => {
+                formData.append('music_files', file);
+            });
+
+            try {
+                const response = await fetch('http://localhost:5000/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                console.log('Upload response:', data);
+                
+                // Add songs to library
+                addSongsToLibrary(uploadedFiles);
+                
+                uploadedFiles = [];
+                displayFileList();
+                closeModal('uploadModal');
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed. Please try again.');
+            }
+        });
+
+        // Create Playlist
+        document.getElementById('createPlaylistBtn').addEventListener('click', () => {
+            openModal('playlistModal');
+        });
+
+        document.getElementById('createPlaylistBtn2').addEventListener('click', () => {
+            openModal('playlistModal');
+        });
+
+        document.getElementById('newPlaylistLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal('playlistModal');
+        });
+
+        document.getElementById('playlistForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('playlistName').value;
+            const description = document.getElementById('playlistDescription').value;
+
+            try {
+                const response = await fetch('http://localhost:5000/playlist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                const data = await response.json();
+                console.log('Playlist created:', data);
+                
+                // Add playlist to UI
+                addPlaylistToUI(name, description);
+                
+                document.getElementById('playlistForm').reset();
+                closeModal('playlistModal');
+            } catch (error) {
+                console.error('Playlist creation error:', error);
+                alert('Failed to create playlist. Please try again.');
+            }
+        });
+
+        // UI Update Functions
+        function addSongsToLibrary(files) {
+            const libraryGrid = document.getElementById('libraryGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            files.forEach(file => {
+                const gradients = [
+                    'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))',
+                    'linear-gradient(135deg, #ff6ec7, #ff9a56)',
+                    'linear-gradient(135deg, #05d9ff, #7b68ee)',
+                    'linear-gradient(135deg, #ffd700, #ff6347)',
+                ];
+                const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
+
+                const card = document.createElement('div');
+                card.className = 'music-card';
+                card.innerHTML = `
+                    <div class="card-cover" style="background: ${randomGradient};">🎵</div>
+                    <div class="card-info">
+                        <h3>${file.name.replace(/\.[^/.]+$/, "")}</h3>
+                        <p>Unknown Artist</p>
+                    </div>
+                    <div class="card-meta">
+                        <button class="play-btn">▶</button>
+                        <span class="duration">--:--</span>
+                    </div>
+                `;
+                libraryGrid.appendChild(card);
+
+                // Add play functionality
+                const playBtn = card.querySelector('.play-btn');
+                playBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isPlaying = playBtn.textContent === '⏸';
+                    playBtn.textContent = isPlaying ? '▶' : '⏸';
+                });
+            });
+        }
+
+        function addPlaylistToUI(name, description) {
+            const playlistGrid = document.getElementById('playlistGrid');
+            const emptyState = playlistGrid.querySelector('.empty-state');
+            
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const card = document.createElement('div');
+            card.className = 'music-card';
+            card.innerHTML = `
+                <div class="card-cover" style="background: linear-gradient(135deg, #7b68ee, #05d9ff);">🎧</div>
+                <div class="card-info">
+                    <h3>${name}</h3>
+                    <p>${description || 'No description'}</p>
+                </div>
+                <div class="card-meta">
+                    <button class="play-btn">▶</button>
+                    <span class="duration">0 songs</span>
+                </div>
+            `;
+            playlistGrid.appendChild(card);
+        }
+
+        // Card click animation
+        document.addEventListener('click', (e) => {
+            const card = e.target.closest('.music-card');
+            if (card && !e.target.closest('.play-btn')) {
+                card.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    card.style.transform = '';
+                }, 200);
+            }
+        });
+    </script>
+</body>
+</html>
