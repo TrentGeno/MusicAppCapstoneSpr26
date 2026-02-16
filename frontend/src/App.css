@@ -269,7 +269,7 @@ nav a:hover::after {
 }
 
 /* Featured Section */
-.featured {
+.section {
     padding: 4rem 0;
     opacity: 0;
     animation: fadeIn 1s ease forwards 0.8s;
