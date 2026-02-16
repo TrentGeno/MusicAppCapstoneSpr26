@@ -109,7 +109,7 @@
                 <h3 style="margin-bottom: 0.5rem;">Drop your music files here</h3>
                 <p style="color: var(--text-secondary); font-size: 0.9rem;">or click to browse</p>
                 <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">
-                    Supported formats: MP3, WAV, FLAC, M4A
+                    Supported formats: MP3, OGG, WAV
                 </p>
             </div>
             <div class="file-list" id="fileList"></div>
@@ -403,5 +403,8 @@
             }
         });
     </script>
+    <audio id="audioPlayer" controls style="width:100%; margin-top:1rem;">
+                Your browser does not support the audio element.
+            </audio>
 </body>
 </html>
