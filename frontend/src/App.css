@@ -430,7 +430,7 @@ nav a:hover::after {
 
 /* Modal */
 .modal {
-    display: none;
+    display: flex;
     position: fixed;
     top: 0;
     left: 0;
@@ -441,10 +441,6 @@ nav a:hover::after {
     z-index: 1000;
     align-items: center;
     justify-content: center;
-}
-
-.modal.active {
-    display: flex;
 }
 
 .modal-content {
