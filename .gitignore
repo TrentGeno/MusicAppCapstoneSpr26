@@ -7,6 +7,11 @@ yarn-error.log*
 lerna-debug.log*
 .venv
 venv
+# Byte-compiled / optimized / DLL files
+backend/__pycache__/*
+*.pyc
+*.pyo
+*.pyd
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
