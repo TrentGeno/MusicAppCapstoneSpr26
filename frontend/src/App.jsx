@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div className="logo">OffBeat</div>
         <nav className="nav">
           <a href="#library" className="nav-link">Library</a>
-          <a href="#playlists" className="nav-link">Playlists</a>
+          <a href="playlist.html" className="nav-link">Playlists</a>
           <a href="#artists" className="nav-link">Artists</a>
         </nav>
         <button className="btn btn-signin" onClick={() => openModal('signin')}>
