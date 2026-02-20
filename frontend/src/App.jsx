@@ -148,25 +148,6 @@ export default function OffBeat() {
     input.click();
   };
 
-  fileInput.addEventListener("change", async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("http://127.0.0.1:5000/upload", {
-        method: "POST",
-        body: formData
-    });
-
-    const data = await response.json();
-
-    if (data.filename) {
-        audioPlayer.src = `/music/${data.filename}`;
-        audioPlayer.play();
-    }
-});
 
 
   return (
