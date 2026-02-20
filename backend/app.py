@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, jsonify
 from database import db, init_db
 
 app = Flask(__name__)
