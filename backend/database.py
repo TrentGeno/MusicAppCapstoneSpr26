@@ -20,3 +20,10 @@ def init_db(app):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     db.init_app(app)
+    
+    with app.app_context():
+        try:
+            db.session.execute(db.text('SELECT 1'))
+            print("✅ Database connected successfully!")
+        except Exception as e:
+            print(f"❌ Database connection failed: {e}")
