@@ -10,6 +10,7 @@ export default function OffBeat() {
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
+  
 
   // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
@@ -44,28 +45,7 @@ export default function OffBeat() {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleUpload = async () => {
-    const formData = new FormData();
-    uploadedFiles.forEach(file => {
-      formData.append('file', file);
-    });
-
-    try {
-      const response = await fetch('http://localhost:5000/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await response.json();
-      console.log('Upload response:', data);
-      
-      addSongsToLibrary(uploadedFiles);
-      setUploadedFiles([]);
-      closeModal();
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Upload failed. Please try again.');
-    }
-  };
+  
 
   // Drag and drop handlers
   const handleDragOver = (e) => {
@@ -138,46 +118,49 @@ export default function OffBeat() {
     }
   };
 
-  // File input click handler
-  const triggerFileInput = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'audio/*';
-    input.multiple = true;
-    input.onchange = (e) => handleFiles(e.target.files);
-    input.click();
-  };
 
-document.addEventListener("DOMContentLoaded", () => {
-    const fileInput = document.getElementById("fileInput");
-    const audioPlayer = document.getElementById("audioPlayer");
-
-    fileInput.addEventListener("change", async (event) => {
-        try {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const response = await fetch("http://127.0.0.1:5000/upload", {
-                method: "POST",
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (data.filename) {
-                audioPlayer.src = `/music/${data.filename}`;
-                await audioPlayer.play();
-            }
-        } catch (err) {
-            console.error("Upload failed:", err);
-        }
-    });
-});
+    
 
 
+
+    const handleUpload = () => {
+      if (uploadedFiles.length === 0) return;
+      addSongsToLibrary(uploadedFiles);
+      setUploadedFiles([]);
+      closeModal();
+    };
+    //old handle upload function for reference
+    // const handleUpload = async () => {
+    //   if (uploadedFiles.length === 0) return;
+
+    //   const formData = new FormData();
+    //   uploadedFiles.forEach(file => {
+    //     formData.append('file', file); // file has to match backends expected key
+    //   });
+
+    //   try {
+    //     const response = await fetch('http://localhost:5000/upload', {
+    //       method: 'POST',
+    //       body: formData,
+          
+    //     });
+
+    //     if (!response.ok) throw new Error('Upload failed');
+
+    //     const data = await response.json();
+    
+    //     // Add to local library state so the UI updates immediately
+    //     addSongsToLibrary(uploadedFiles);
+    //     setUploadedFiles([]);
+    //     closeModal();
+    //     alert('Upload successful!');
+    //   } catch (error) {
+    //     console.error('Upload error:', error);
+    //     alert('Server error: Make sure your Flask/Express backend is running on port 5000');
+    //   }
+    // };
+
+  
   return (
     <div className="container">
       {/* Header */}
@@ -349,20 +332,26 @@ document.addEventListener("DOMContentLoaded", () => {
               <h2 className="modal-title">Upload Music</h2>
               <button className="close-modal" onClick={closeModal}>×</button>
             </div>
-            <div
+              
+            <label
               className={`upload-area ${isDragging ? 'dragover' : ''}`}
-              onClick={triggerFileInput}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
+              <input
+                type="file"
+                style={{ opacity: 0.5 }}
+                accept="audio/*"
+                multiple
+                onChange={(e) => handleFiles(e.target.files)}
+              />
               <div className="upload-icon">📁</div>
               <h3 className="upload-title">Drop your music files here</h3>
               <p className="upload-subtext">or click to browse</p>
-              <p className="upload-formats">
-                Supported formats: MP3, WAV, FLAC, M4A
-              </p>
-            </div>
+              <p className="upload-formats">Supported formats: MP3, WAV, FLAC, M4A</p>
+              </label>
+
             <div className="file-list">
               {uploadedFiles.map((file, index) => (
                 <div key={index} className="file-item">
