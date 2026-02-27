@@ -103,9 +103,10 @@ export default function OffBeat() {
         );
       });
       
-      // attempt to read cover art from file metadata
+      // attempt to read metadata (cover art + artist) from file
       JsMediaTags.read(file, {
         onSuccess: (tag) => {
+          // update cover art if available
           const picture = tag.tags.picture;
           if (picture) {
             let base64String = '';
@@ -114,9 +115,20 @@ export default function OffBeat() {
               base64String += String.fromCharCode(byteArray[i]);
             }
             const imageUrl = `data:${picture.format};base64,${btoa(base64String)}`;
+
             setLibrary(prev =>
               prev.map(s =>
                 s.id === song.id ? { ...s, cover: imageUrl } : s
+              )
+            );
+          }
+
+          // update artist if metadata contains it
+          const artistTag = tag.tags.artist;
+          if (artistTag) {
+            setLibrary(prev =>
+              prev.map(s =>
+                s.id === song.id ? { ...s, artist: artistTag } : s
               )
             );
           }

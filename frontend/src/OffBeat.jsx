@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 import './App.css';
+import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
 
 export default function OffBeat() {
   // State management
@@ -73,23 +74,37 @@ export default function OffBeat() {
       'linear-gradient(135deg, #ffd700, #ff6347)',
     ];
 
-    const newSongs = files.map(file => ({
-      id: Date.now() + Math.random(),
-      name: file.name.replace(/\.[^/.]+$/, ""),
-      artist: 'Unknown Artist',
-      gradient: gradients[Math.floor(Math.random() * gradients.length)],
-      isPlaying: false
-    }));
+    const newSongs = files.map(file => {
+      return {
+        id: Date.now() + Math.random(),
+        name: file.name.replace(/\.[^/.]+$/, ""),
+        artist: 'Unknown Artist',
+        gradient: gradients[Math.floor(Math.random() * gradients.length)],
+        isPlaying: false
+      };
+    });
 
     setLibrary(prev => [...prev, ...newSongs]);
-  };
 
-  // Toggle play/pause
-  const togglePlay = (songId) => {
-    setLibrary(prev => prev.map(song => 
-      song.id === songId ? { ...song, isPlaying: !song.isPlaying } : song
-    ));
-  };
+    // read artist metadata for each file and update state
+    files.forEach((file, index) => {
+      const song = newSongs[index];
+      JsMediaTags.read(file, {
+        onSuccess: (tag) => {
+          const artistTag = tag.tags.artist;
+          if (artistTag) {
+            setLibrary(prev =>
+              prev.map(s =>
+                s.id === song.id ? { ...s, artist: artistTag } : s
+              )
+            );
+          }
+        },
+        onError: (err) => {
+          console.warn('jsmediatags error', err);
+        }
+      });
+    });
 
   // Create playlist
   const handleCreatePlaylist = async (e) => {
