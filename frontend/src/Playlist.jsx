@@ -1,9 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-// Playlist.jsx
-// Updated to match a Spotify-like playlist layout using your provided App.css
-// Drop this file into your project (e.g. src/components/Playlist.jsx)
-
 export default function Playlist({ initialTracks }) {
   const [tracks, setTracks] = useState(initialTracks || demoTracks());
   const [current, setCurrent] = useState(0);
