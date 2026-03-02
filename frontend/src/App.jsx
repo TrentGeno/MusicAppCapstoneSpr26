@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
+import Playlist from './Playlist';
 
 export default function OffBeat() {
   // State management
@@ -11,6 +12,7 @@ export default function OffBeat() {
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
+  const [showPlaylistPage, setShowPlaylistPage] = useState(false);
   
 
   // Modal functions
@@ -298,14 +300,35 @@ export default function OffBeat() {
       <header className="header">
         <div className="logo">OffBeat</div>
         <nav className="nav">
-          <a href="#library" className="nav-link">Library</a>
-          <a href="#playlists" className="nav-link">Playlists</a>
-          <a href="#artists" className="nav-link">Artists</a>
+        <button className="nav-link" onClick={() => setRoute('home')}>Library</button>
+        <button className="nav-link" onClick={() => setShowPlaylistPage(true)}>Playlists</button>
+        <button className="nav-link" onClick={() => setRoute('artists')}>Artists</button>
         </nav>
         <button className="btn btn-signin" onClick={() => openModal('signin')}>
           Sign In
         </button>
       </header>
+
+      {showPlaylistPage && (
+  <div style={{
+    position: "fixed",
+    inset: 0,
+    background: "#0a0a0f",
+    zIndex: 9999,
+    overflowY: "auto"
+  }}>
+    <div classname="playlist-topbar">
+      <button
+        className="btn btn-secondary"
+        onClick={() => setShowPlaylistPage(false)}
+      >
+        ← Back
+      </button>
+    </div>
+
+    <Playlist />
+  </div>
+)}
 
       {/* Hero Section */}
       <section className="hero">
