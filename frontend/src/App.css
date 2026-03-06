@@ -417,10 +417,31 @@ nav a:hover::after {
 
 .player-controls {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     width: 100%;
-    gap: 1rem;
+}
+
+.time-group {
+    display: flex;
+    align-items: center;
+}
+
+.repeat-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(185, 103, 255, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    padding: 0;
+    position: relative;
+    margin-left: auto;
 }
 
 .play-btn {
@@ -448,6 +469,17 @@ nav a:hover::after {
     font-size: 0.85rem;
 }
 
+.elapsed {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-right: 0.25rem;
+}
+
+.time-separator {
+    color: var(--text-secondary);
+    margin: 0 0.25rem;
+    font-size: 0.85rem;
+}
 .repeat-btn {
     width: 30px;
     height: 30px;
