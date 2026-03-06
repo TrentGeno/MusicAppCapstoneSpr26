@@ -2,13 +2,24 @@ import os
 
 from flask import Flask, request, send_from_directory, jsonify
 from database import db, init_db
+from flask_cors import CORS
 
 app = Flask(__name__)
 init_db(app) # Initializes the connection defined in the other file
+CORS(app)
 
-@app.route('/')
-def index():
-    return "Connected to MusicApp DB!"
+
+@app.route('/test-db')
+def test_db():
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        return {'status': 'success', 'message': 'Database connected!'}, 200
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}, 500
+
+@app.route("/home") 
+def hello(): 
+    return jsonify({"message": "Homepage Template"})
 
 
 UPLOAD_FOLDER = "uploads"

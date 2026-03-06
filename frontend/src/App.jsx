@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
+import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
 
 export default function OffBeat() {
   // State management
@@ -63,7 +64,7 @@ export default function OffBeat() {
     handleFiles(e.dataTransfer.files);
   };
 
-  // Add songs to library
+  // Add songs to library and prepare audio elements for playback
   const addSongsToLibrary = (files) => {
     const gradients = [
       'linear-gradient(135deg, #a855f7, #ec4899)',
@@ -72,22 +73,129 @@ export default function OffBeat() {
       'linear-gradient(135deg, #ffd700, #ff6347)',
     ];
 
-    const newSongs = files.map(file => ({
-      id: Date.now() + Math.random(),
-      name: file.name.replace(/\.[^/.]+$/, ""),
-      artist: 'Unknown Artist',
-      gradient: gradients[Math.floor(Math.random() * gradients.length)],
-      isPlaying: false
-    }));
+    const newSongs = files.map(file => {
+      const url = URL.createObjectURL(file);
+      const audio = new Audio(url);
+
+      const song = {
+        id: Date.now() + Math.random(),
+        name: file.name.replace(/\.[^/.]+$/, ""),
+        artist: 'Unknown Artist',
+        gradient: gradients[Math.floor(Math.random() * gradients.length)],
+        isPlaying: false,
+        url,
+        audio,
+        duration: '--:--',
+        progress: 0,
+        cover: null,
+      };
+
+      // populate duration once metadata is loaded
+      audio.addEventListener('loadedmetadata', () => {
+        const minutes = Math.floor(audio.duration / 60);
+        const seconds = Math.floor(audio.duration % 60)
+          .toString()
+          .padStart(2, '0');
+        setLibrary(prev =>
+          prev.map(s =>
+            s.id === song.id ? { ...s, duration: `${minutes}:${seconds}` } : s
+          )
+        );
+      });
+      
+      // attempt to read metadata (cover art + artist) from file
+      JsMediaTags.read(file, {
+        onSuccess: (tag) => {
+          // update cover art if available
+          const picture = tag.tags.picture;
+          if (picture) {
+            let base64String = '';
+            const byteArray = picture.data;
+            for (let i = 0; i < byteArray.length; i++) {
+              base64String += String.fromCharCode(byteArray[i]);
+            }
+            const imageUrl = `data:${picture.format};base64,${btoa(base64String)}`;
+
+            setLibrary(prev =>
+              prev.map(s =>
+                s.id === song.id ? { ...s, cover: imageUrl } : s
+              )
+            );
+          }
+
+          // update artist if metadata contains it
+          const artistTag = tag.tags.artist;
+          if (artistTag) {
+            setLibrary(prev =>
+              prev.map(s =>
+                s.id === song.id ? { ...s, artist: artistTag } : s
+              )
+            );
+          }
+        },
+        onError: (error) => {
+          console.warn('jsmediatags error', error);
+        }
+      });
+
+      audio.addEventListener('ended', () => {
+        setLibrary(prev =>
+          prev.map(s =>
+            s.id === song.id ? { ...s, isPlaying: false, progress: 0 } : s
+          )
+        );
+      });
+
+      // update progress as the track plays
+      audio.addEventListener('timeupdate', () => {
+        if (audio.duration) {
+          const pct = (audio.currentTime / audio.duration) * 100;
+          setLibrary(prev =>
+            prev.map(s =>
+              s.id === song.id ? { ...s, progress: pct } : s
+            )
+          );
+        }
+      });
+
+      return song;
+    });
 
     setLibrary(prev => [...prev, ...newSongs]);
   };
 
-  // Toggle play/pause
+  // Toggle play/pause and ensure only one track plays at a time
   const togglePlay = (songId) => {
-    setLibrary(prev => prev.map(song => 
-      song.id === songId ? { ...song, isPlaying: !song.isPlaying } : song
-    ));
+    setLibrary(prev =>
+      prev.map(song => {
+        if (song.id === songId) {
+          if (song.isPlaying) {
+            song.audio.pause();
+          } else {
+            song.audio.play();
+          }
+          return { ...song, isPlaying: !song.isPlaying };
+        }
+        // pause any other track that might be playing
+        if (song.isPlaying) {
+          song.audio.pause();
+        }
+        return { ...song, isPlaying: false };
+      })
+    );
+  };
+
+  // seek within a track when progress bar clicked
+  const seek = (songId, percent) => {
+    setLibrary(prev =>
+      prev.map(song => {
+        if (song.id === songId && song.audio.duration) {
+          song.audio.currentTime = (percent / 100) * song.audio.duration;
+          return { ...song, progress: percent };
+        }
+        return song;
+      })
+    );
   };
 
   // Create playlist
@@ -123,11 +231,34 @@ export default function OffBeat() {
 
 
 
-    const handleUpload = () => {
+    const handleUpload = async () => {
       if (uploadedFiles.length === 0) return;
-      addSongsToLibrary(uploadedFiles);
-      setUploadedFiles([]);
-      closeModal();
+
+      // send files to backend for storage
+      const formData = new FormData();
+      uploadedFiles.forEach(file => {
+        formData.append('file', file); // key matches Flask endpoint
+      });
+
+      try {
+        const response = await fetch('http://localhost:5000/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error('Upload failed');
+        const data = await response.json();
+        // we could use data.filename if backend returns it, but we
+        // still generate objectURLs for immediate playback
+
+        addSongsToLibrary(uploadedFiles);
+        setUploadedFiles([]);
+        closeModal();
+        alert('Upload successful!');
+      } catch (error) {
+        console.error('Upload error:', error);
+        alert('Server error: Make sure your Flask/Express backend is running on port 5000');
+      }
     };
     //old handle upload function for reference
     // const handleUpload = async () => {
@@ -225,7 +356,13 @@ export default function OffBeat() {
             library.map(song => (
               <div key={song.id} className="music-card">
                 <div className="card-cover" style={{ background: song.gradient }}>
-                  🎵
+                  {song.cover ? (
+                    <img src={song.cover} alt="cover" className="cover-img" />
+                  ) : (
+                    <span className="cover-initial">
+                      {song.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="card-info">
                   <h3 className="card-title">{song.name}</h3>
@@ -238,7 +375,21 @@ export default function OffBeat() {
                   >
                     {song.isPlaying ? '⏸' : '▶'}
                   </button>
-                  <span className="duration">--:--</span>
+                  <span className="duration">{song.duration}</span>
+                  <div
+                    className="progress-bar"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = e.clientX - rect.left;
+                      const pct = (x / rect.width) * 100;
+                      seek(song.id, pct);
+                    }}
+                  >
+                    <div
+                      className="progress-filled"
+                      style={{ width: `${song.progress}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             ))

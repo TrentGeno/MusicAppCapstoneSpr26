@@ -199,6 +199,42 @@ nav a:hover::after {
     border-color: rgba(255, 255, 255, 0.4);
 }
 
+.cover-initial {
+    font-size: 2rem;
+    color: white;
+    font-weight: 600;
+}
+
+.cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+/* progress bar inside music card */
+.card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+}
+
+.progress-bar {
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    cursor: pointer;
+}
+
+.progress-filled {
+    height: 100%;
+    background: var(--accent-purple);
+    width: 0;
+}
+
 /* Vinyl Animation */
 .hero-visual {
     position: relative;
@@ -254,7 +290,6 @@ nav a:hover::after {
     align-items: center;
     justify-content: center;
     font-size: 6rem;
-    animation: float 3s ease-in-out infinite;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
 }
 
@@ -263,10 +298,6 @@ nav a:hover::after {
     to { transform: rotate(360deg); }
 }
 
-@keyframes float {
-    0%, 100% { transform: translate(-50%, -50%) translateY(0); }
-    50% { transform: translate(-50%, -50%) translateY(-10px); }
-}
 
 /* Featured Section */
 .featured {
@@ -662,4 +693,274 @@ nav a:hover::after {
     nav {
         gap: 1.5rem;
     }
+
+    /* ========================= */
+/* SPOTIFY PLAYLIST ADDITIONS */
+/* ========================= */
+
+.playlist-page {
+    padding-bottom: 4rem;
+}
+
+/* Hero Section */
+.spotify-hero {
+    display: flex;
+    align-items: flex-end;
+    gap: 2rem;
+    padding: 3rem 0;
+}
+
+.spotify-cover {
+    width: 230px;
+    height: 230px;
+    background: linear-gradient(135deg, #1db954, #1ed760);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    border-radius: 8px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+.spotify-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+.spotify-type {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+}
+
+.spotify-title {
+    font-size: 4rem;
+    font-weight: 800;
+    margin: 0.5rem 0;
+}
+
+.spotify-desc {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.spotify-stats {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Controls */
+.spotify-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.spotify-play {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #1db954;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: black;
+    transition: transform 0.2s ease;
+}
+
+.spotify-play:hover {
+    transform: scale(1.05);
+}
+
+.spotify-add {
+    font-size: 1.5rem;
+    background: transparent;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-primary);
+    padding: 0.6rem 1rem;
+    border-radius: 50px;
+    cursor: pointer;
+}
+
+/* Table */
+.spotify-table {
+    margin-top: 2rem;
+}
+
+.spotify-header,
+.spotify-row {
+    display: grid;
+    grid-template-columns: 50px 2fr 1fr 1fr 120px;
+    align-items: center;
+    padding: 1rem;
+}
+
+.spotify-header {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.spotify-row {
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.spotify-row:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.spotify-track {
+    display: flex;
+    flex-direction: column;
+}
+
+.track-main {
+    font-weight: 500;
+}
+
+.track-sub {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.row-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-left: 1rem;
+}
+
+.remove-btn:hover {
+    color: #ff4d4d;
+}
+
+}
+
+/* ========================= */
+/* PLAYLIST PAGE STYLING */
+/* ========================= */
+
+.playlist-page {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #5e2ca5 0%, #1e0f33 40%, #121212 75%);
+  color: white;
+  padding-bottom: 100px;
+}
+
+/* HERO SECTION */
+
+.playlist-hero {
+  display: flex;
+  align-items: flex-end;
+  gap: 30px;
+  padding: 70px 40px 40px 40px;
+}
+
+.playlist-cover {
+  width: 230px;
+  height: 230px;
+  object-fit: cover;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+.playlist-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.playlist-type {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  opacity: 0.8;
+}
+
+.playlist-title {
+  font-size: 80px;
+  font-weight: 800;
+  margin: 10px 0;
+}
+
+.playlist-meta {
+  opacity: 0.8;
+}
+
+/* CONTROLS */
+
+.playlist-controls {
+  padding: 20px 40px;
+}
+
+.play-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  font-size: 22px;
+  background-color: #9b5de5;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.play-button:hover {
+  transform: scale(1.08);
+  background-color: #b983ff;
+}
+
+/* SONG TABLE HEADER */
+
+.song-table-header {
+  display: grid;
+  grid-template-columns: 40px 3fr 2fr 1fr 60px;
+  padding: 10px 40px;
+  font-size: 14px;
+  opacity: 0.6;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* SONG ROWS */
+
+.song-row {
+  display: grid;
+  grid-template-columns: 40px 3fr 2fr 1fr 60px;
+  padding: 12px 40px;
+  align-items: center;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.song-row:hover {
+  background-color: rgba(255,255,255,0.05);
+}
+
+.song-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.song-title img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+}
+
+.song-title p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.song-title span {
+  font-size: 12px;
+  opacity: 0.7;
 }
