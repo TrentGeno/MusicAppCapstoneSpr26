@@ -219,14 +219,16 @@ nav a:hover::after {
     position: relative;
 }
 
-.progress-bar {
-    position: absolute;
-    bottom: -6px;
-    left: 0;
+/* progress bar inside music card */
+.card-meta .progress-bar {
+    position: relative;
+    bottom: auto;
+    left: auto;
     width: 100%;
     height: 4px;
     background: rgba(255,255,255,0.1);
     cursor: pointer;
+    margin-top: 0.5rem;
 }
 
 .progress-filled {
@@ -398,11 +400,27 @@ nav a:hover::after {
 
 .card-meta {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    gap: 0.75rem;
+}
+
+.player-top {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.player-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 1rem;
 }
 
 .play-btn {
@@ -428,6 +446,60 @@ nav a:hover::after {
 .duration {
     color: var(--text-secondary);
     font-size: 0.85rem;
+}
+
+.repeat-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(185, 103, 255, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    padding: 0;
+    position: relative;
+}
+
+.repeat-btn:hover {
+    color: var(--accent-purple);
+    border-color: var(--accent-purple);
+}
+
+.repeat-btn.repeat-one {
+    color: var(--accent-purple);
+    border-color: var(--accent-purple);
+}
+
+.repeat-btn.repeat-all {
+    background: var(--accent-purple);
+    color: white;
+    border-color: var(--accent-purple);
+}
+
+.repeat-btn.repeat-all:hover {
+    box-shadow: 0 0 12px var(--glow);
+}
+
+.repeat-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    background: var(--accent-purple);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1;
 }
 
 /* Empty State */
