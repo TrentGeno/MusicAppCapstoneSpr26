@@ -11,6 +11,8 @@ export default function OffBeat() {
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
   
 
   // Modal functions
@@ -35,6 +37,32 @@ export default function OffBeat() {
       alert('Sign in failed. Please check your credentials.');
     }
   };
+
+  // Volume control
+    const toggleMute = () => {
+      if (isMuted) {
+        const unmuteVolume = Math.min(volume, 0.75);
+        setVolume(unmuteVolume);
+        setIsMuted(false);
+        library.forEach(song => {
+          song.audio.muted = false;
+          song.audio.volume = unmuteVolume;
+        });
+      } else {
+        setIsMuted(true);
+        library.forEach(song => { song.audio.muted = true; });
+      }
+    };
+
+
+
+
+
+    const changeVolume = (value) => {
+      setVolume(value);
+      setIsMuted(value === 0);
+      library.forEach(song => { song.audio.volume = value; });
+    };
 
   // File handling
   const handleFiles = (files) => {
@@ -474,6 +502,22 @@ export default function OffBeat() {
           </div>
         </div>
       )}
+      
+      <div className="soundbar">
+        <button className="mute-btn" onClick={toggleMute}>
+          {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+        </button>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={isMuted ? 0 : volume}
+          onChange={(e) => changeVolume(parseFloat(e.target.value))}
+          className="volume-slider"
+        />
+        <span className="volume-label">{Math.round((isMuted ? 0 : volume) * 100)}%</span>
+        </div>
 
       {/* Upload Modal */}
       {activeModal === 'upload' && (
