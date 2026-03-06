@@ -12,6 +12,7 @@ export default function OffBeat() {
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
+  const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showPlaylistPage, setShowPlaylistPage] = useState(false);
@@ -116,8 +117,10 @@ export default function OffBeat() {
         url,
         audio,
         duration: '--:--',
+        currentTime: '0:00',
         progress: 0,
         cover: null,
+        repeatMode: 'none',
       };
 
       // populate duration once metadata is loaded
@@ -169,20 +172,61 @@ export default function OffBeat() {
       });
 
       audio.addEventListener('ended', () => {
-        setLibrary(prev =>
-          prev.map(s =>
-            s.id === song.id ? { ...s, isPlaying: false, progress: 0 } : s
-          )
-        );
+        setLibrary(prev => {
+          const index = prev.findIndex(s => s.id === song.id);
+          if (index === -1) return prev;
+
+          const current = prev[index];
+          const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
+
+          if (mode === 'one') {
+            // restart same track
+            current.audio.currentTime = 0;
+            current.audio.play();
+            const copy = [...prev];
+            copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
+            return copy;
+          }
+
+          if (mode === 'all') {
+            // move to next track (wrap around)
+            const nextIndex = (index + 1) % prev.length;
+            const copy = prev.map((s, i) => {
+              if (i === index) {
+                return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
+              }
+              if (i === nextIndex) {
+                s.audio.currentTime = 0;
+                s.audio.play();
+                return { ...s, isPlaying: true, progress: 0, currentTime: '0:00', repeatMode: mode };
+              }
+              return { ...s, isPlaying: false, repeatMode: 'none' };
+            });
+            return copy;
+          }
+
+          // no repeat
+          return prev.map(s =>
+            s.id === song.id
+              ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' }
+              : s
+          );
+        });
       });
 
-      // update progress as the track plays
+      // update progress and elapsed time as the track plays
       audio.addEventListener('timeupdate', () => {
         if (audio.duration) {
           const pct = (audio.currentTime / audio.duration) * 100;
+          const mins = Math.floor(audio.currentTime / 60);
+          const secs = Math.floor(audio.currentTime % 60)
+            .toString()
+            .padStart(2, '0');
           setLibrary(prev =>
             prev.map(s =>
-              s.id === song.id ? { ...s, progress: pct } : s
+              s.id === song.id
+                ? { ...s, progress: pct, currentTime: `${mins}:${secs}` }
+                : s
             )
           );
         }
@@ -199,21 +243,28 @@ export default function OffBeat() {
     setLibrary(prev =>
       prev.map(song => {
         if (song.id === songId) {
+          const newState = !song.isPlaying;
+          if (newState) {
+            // if starting a different song, clear repeat mode
+            if (globalRepeatMode !== song.repeatMode) {
+              setGlobalRepeatMode('none');
+            }
+          }
           if (song.isPlaying) {
             song.audio.pause();
           } else {
             song.audio.play();
           }
-          return { ...song, isPlaying: !song.isPlaying };
+          return { ...song, isPlaying: newState };
         }
-        // pause any other track that might be playing
+        // pause any other track that might be playing and clear their repeatMode
         if (song.isPlaying) {
           song.audio.pause();
         }
-        return { ...song, isPlaying: false };
+        return { ...song, isPlaying: false, repeatMode: 'none' };
       })
     );
-  };
+  }; 
 
   // seek within a track when progress bar clicked
   const seek = (songId, percent) => {
@@ -221,12 +272,32 @@ export default function OffBeat() {
       prev.map(song => {
         if (song.id === songId && song.audio.duration) {
           song.audio.currentTime = (percent / 100) * song.audio.duration;
-          return { ...song, progress: percent };
+          const mins = Math.floor(song.audio.currentTime / 60);
+          const secs = Math.floor(song.audio.currentTime % 60)
+            .toString()
+            .padStart(2, '0');
+          return { ...song, progress: percent, currentTime: `${mins}:${secs}` };
         }
         return song;
       })
     );
   };
+
+  // Toggle repeat mode: none -> all -> one -> none
+  const toggleRepeat = (songId) => {
+    setLibrary(prev =>
+      prev.map(song => {
+        if (song.id === songId) {
+          let nextMode = 'none';
+          if (song.repeatMode === 'none') nextMode = 'all';
+          else if (song.repeatMode === 'all') nextMode = 'one';
+          setGlobalRepeatMode(nextMode);
+          return { ...song, repeatMode: nextMode };
+        }
+        return song;
+      })
+    );
+  }; 
 
   // Create playlist
   const handleCreatePlaylist = async (e) => {
@@ -426,21 +497,40 @@ export default function OffBeat() {
                   >
                     {song.isPlaying ? '⏸' : '▶'}
                   </button>
-                  <span className="duration">{song.duration}</span>
-                  <div
-                    className="progress-bar"
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const x = e.clientX - rect.left;
-                      const pct = (x / rect.width) * 100;
-                      seek(song.id, pct);
-                    }}
-                  >
-                    <div
-                      className="progress-filled"
-                      style={{ width: `${song.progress}%` }}
-                    />
-                  </div>
+
+                  {song.isPlaying && (
+                    <>
+                      <div className="player-controls">
+                        <div className="time-group">
+                          <span className="elapsed">{song.currentTime}</span>
+                          <span className="time-separator">/</span>
+                          <span className="duration">{song.duration}</span>
+                        </div>
+                        <button 
+                          className={`repeat-btn repeat-${song.repeatMode}`}
+                          onClick={(e) => { e.stopPropagation(); toggleRepeat(song.id); }}
+                          title={`Repeat: ${song.repeatMode}`}
+                        >
+                          ↻
+                          {song.repeatMode === 'one' && <span className="repeat-badge">1</span>}
+                        </button>
+                      </div>
+                      <div
+                        className="progress-bar"
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const x = e.clientX - rect.left;
+                          const pct = (x / rect.width) * 100;
+                          seek(song.id, pct);
+                        }}
+                      >
+                        <div
+                          className="progress-filled"
+                          style={{ width: `${song.progress}%` }}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))
