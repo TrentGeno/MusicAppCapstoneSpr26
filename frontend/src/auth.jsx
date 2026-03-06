@@ -1,5 +1,3 @@
-import { createAuth0Client } from '@auth0/auth0-spa-js'
-import axios from 'axios'
 import { useState } from 'react'
 import { createContext } from 'react'
 import { useContext } from 'react'

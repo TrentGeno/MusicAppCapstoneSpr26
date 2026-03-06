@@ -29,3 +29,7 @@ dist-ssr
 *.m4a
 *.mp4
 *.flac
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
