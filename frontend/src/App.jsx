@@ -88,6 +88,7 @@ export default function OffBeat() {
         duration: '--:--',
         progress: 0,
         cover: null,
+        repeatMode: 'none',
       };
 
       // populate duration once metadata is loaded
@@ -140,9 +141,23 @@ export default function OffBeat() {
 
       audio.addEventListener('ended', () => {
         setLibrary(prev =>
-          prev.map(s =>
-            s.id === song.id ? { ...s, isPlaying: false, progress: 0 } : s
-          )
+          prev.map(s => {
+            if (s.id === song.id) {
+              if (s.repeatMode === 'one') {
+                // Repeat single song
+                s.audio.currentTime = 0;
+                s.audio.play();
+                return { ...s, isPlaying: true, progress: 0 };
+              } else if (s.repeatMode === 'all') {
+                // Repeat all songs - just reset this song and mark as not playing
+                return { ...s, isPlaying: false, progress: 0 };
+              } else {
+                // No repeat
+                return { ...s, isPlaying: false, progress: 0 };
+              }
+            }
+            return s;
+          })
         );
       });
 
@@ -192,6 +207,21 @@ export default function OffBeat() {
         if (song.id === songId && song.audio.duration) {
           song.audio.currentTime = (percent / 100) * song.audio.duration;
           return { ...song, progress: percent };
+        }
+        return song;
+      })
+    );
+  };
+
+  // Toggle repeat mode: none -> all -> one -> none
+  const toggleRepeat = (songId) => {
+    setLibrary(prev =>
+      prev.map(song => {
+        if (song.id === songId) {
+          let nextMode = 'none';
+          if (song.repeatMode === 'none') nextMode = 'all';
+          else if (song.repeatMode === 'all') nextMode = 'one';
+          return { ...song, repeatMode: nextMode };
         }
         return song;
       })
@@ -369,13 +399,25 @@ export default function OffBeat() {
                   <p className="card-artist">{song.artist}</p>
                 </div>
                 <div className="card-meta">
-                  <button 
-                    className="play-btn" 
-                    onClick={(e) => { e.stopPropagation(); togglePlay(song.id); }}
-                  >
-                    {song.isPlaying ? '⏸' : '▶'}
-                  </button>
-                  <span className="duration">{song.duration}</span>
+                  <div className="player-top">
+                    <button 
+                      className="play-btn" 
+                      onClick={(e) => { e.stopPropagation(); togglePlay(song.id); }}
+                    >
+                      {song.isPlaying ? '⏸' : '▶'}
+                    </button>
+                  </div>
+                  <div className="player-controls">
+                    <span className="duration">{song.duration}</span>
+                    <button 
+                      className={`repeat-btn repeat-${song.repeatMode}`}
+                      onClick={(e) => { e.stopPropagation(); toggleRepeat(song.id); }}
+                      title={`Repeat: ${song.repeatMode}`}
+                    >
+                      ↻
+                      {song.repeatMode === 'one' && <span className="repeat-badge">1</span>}
+                    </button>
+                  </div>
                   <div
                     className="progress-bar"
                     onClick={(e) => {
