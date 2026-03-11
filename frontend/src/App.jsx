@@ -143,20 +143,7 @@ export default function OffBeat() {
 
 
 
-  const toggleMute = () => {
-    if (isMuted) {
-      const unmuteVolume = Math.min(volume, 0.75);
-      setVolume(unmuteVolume);
-      setIsMuted(false);
-      library.forEach(song => {
-        song.audio.muted = false;
-        song.audio.volume = unmuteVolume;
-      });
-    } else {
-      setIsMuted(true);
-      library.forEach(song => { song.audio.muted = true; });
-    }
-  };
+
 
   const changeVolume = (value) => {
     setVolume(value);
@@ -613,35 +600,33 @@ export default function OffBeat() {
         </div>
       )}
 
-      <div className="soundbar">
-        <button className="mute-btn" onClick={toggleMute}>
-          {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
-        </button>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={isMuted ? 0 : volume}
-          onChange={(e) => changeVolume(parseFloat(e.target.value))}
-          className="volume-slider"
-        />
-  <span className="volume-label">{Math.round((isMuted ? 0 : volume) * 100)}%</span>
+<div className="soundbar">
+      <button className="mute-btn" onClick={toggleMute}>
+        {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+      </button>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={isMuted ? 0 : volume}
+        onChange={(e) => changeVolume(parseFloat(e.target.value))}
+        className="volume-slider"
+      />
+      <span className="volume-label">{Math.round((isMuted ? 0 : volume) * 100)}%</span>
 
-  <div className="playback-controls">
-    <button className="control-btn" onClick={replaySong} title="Replay">⏮</button>
-    <button 
-      className="control-btn play-pause-btn" 
-      onClick={handleSoundbarPlay}
-      title="Play/Pause"
-    >
-      {library.find(s => s.id === currentSongId)?.isPlaying ? '⏸' : '▶'}
-    </button>
-    <button className="control-btn" onClick={skipSong} title="Skip">⏭</button>
-  </div>
-</div>
-        <span className="volume-label">{Math.round((isMuted ? 0 : volume) * 100)}%</span>
+      <div className="playback-controls">
+        <button className="control-btn" onClick={replaySong} title="Replay">⏮</button>
+        <button 
+          className="control-btn play-pause-btn" 
+          onClick={handleSoundbarPlay}
+          title="Play/Pause"
+        >
+          {library.find(s => s.id === currentSongId)?.isPlaying ? '⏸' : '▶'}
+        </button>
+        <button className="control-btn" onClick={skipSong} title="Skip">⏭</button>
       </div>
+    </div>
 
       {/* Upload Modal */}
       {activeModal === 'upload' && (
