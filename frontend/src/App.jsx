@@ -14,6 +14,7 @@ export default function OffBeat() {
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [currentSongId, setCurrentSongId] = useState(null);
 
   // Fetch tracks from DB — defined outside useEffect so handleUpload can call it too
   const fetchTracks = async () => {
@@ -104,6 +105,44 @@ export default function OffBeat() {
   };
 
   // Volume control
+    const toggleMute = () => {
+      if (isMuted) {
+        const unmuteVolume = Math.min(volume, 0.75);
+        setVolume(unmuteVolume);
+        setIsMuted(false);
+        library.forEach(song => {
+          song.audio.muted = false;
+          song.audio.volume = unmuteVolume;
+        });
+      } else {
+        setIsMuted(true);
+        library.forEach(song => { song.audio.muted = true; });
+      }
+    };
+    const skipSong = () => {
+      const index = library.findIndex(s => s.id === currentSongId);
+      const nextIndex = (index + 1) % library.length;
+      if (library[nextIndex]) togglePlay(library[nextIndex].id);
+    };
+
+    const replaySong = () => {
+      const song = library.find(s => s.id === currentSongId);
+      if (song) {
+        song.audio.currentTime = 0;
+        if (!song.isPlaying) togglePlay(song.id);
+      }
+    };
+    const handleSoundbarPlay = () => {
+      if (currentSongId) {
+        togglePlay(currentSongId);
+      } else if (library.length > 0) {
+        togglePlay(library[0].id);
+      }
+    };
+
+
+
+
   const toggleMute = () => {
     if (isMuted) {
       const unmuteVolume = Math.min(volume, 0.75);
@@ -296,31 +335,20 @@ export default function OffBeat() {
 
   // Toggle play/pause and ensure only one track plays at a time
   const togglePlay = (songId) => {
-    setLibrary(prev =>
-      prev.map(song => {
-        if (song.id === songId) {
-          const newState = !song.isPlaying;
-          if (newState) {
-            // if starting a different song, clear repeat mode
-            if (globalRepeatMode !== song.repeatMode) {
-              setGlobalRepeatMode('none');
-            }
-          }
-          if (song.isPlaying) {
-            song.audio.pause();
-          } else {
-            song.audio.play();
-          }
-          return { ...song, isPlaying: newState };
-        }
-        // pause any other track that might be playing and clear their repeatMode
+    setCurrentSongId(songId);
+    setLibrary(prev => prev.map(song => {
+      if (song.id === songId) {
         if (song.isPlaying) {
           song.audio.pause();
+        } else {
+          song.audio.play();
         }
-        return { ...song, isPlaying: false, repeatMode: 'none' };
-      })
-    );
-  }; 
+        return { ...song, isPlaying: !song.isPlaying };
+      }
+      if (song.isPlaying) song.audio.pause();
+      return { ...song, isPlaying: false };
+    }));
+  };
 
   // Seek within a track when progress bar is clicked
   const seek = (songId, percent) => {
@@ -598,6 +626,20 @@ export default function OffBeat() {
           onChange={(e) => changeVolume(parseFloat(e.target.value))}
           className="volume-slider"
         />
+  <span className="volume-label">{Math.round((isMuted ? 0 : volume) * 100)}%</span>
+
+  <div className="playback-controls">
+    <button className="control-btn" onClick={replaySong} title="Replay">⏮</button>
+    <button 
+      className="control-btn play-pause-btn" 
+      onClick={handleSoundbarPlay}
+      title="Play/Pause"
+    >
+      {library.find(s => s.id === currentSongId)?.isPlaying ? '⏸' : '▶'}
+    </button>
+    <button className="control-btn" onClick={skipSong} title="Skip">⏭</button>
+  </div>
+</div>
         <span className="volume-label">{Math.round((isMuted ? 0 : volume) * 100)}%</span>
       </div>
 
