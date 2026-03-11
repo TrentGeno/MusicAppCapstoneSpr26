@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
 
@@ -15,71 +15,7 @@ export default function OffBeat() {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
-
-  // Fetch tracks from DB — defined outside useEffect so handleUpload can call it too
-  const fetchTracks = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/tracks');
-      const data = await response.json();
-
-      const gradients = [
-        'linear-gradient(135deg, #a855f7, #ec4899)',
-        'linear-gradient(135deg, #ff6ec7, #ff9a56)',
-        'linear-gradient(135deg, #05d9ff, #7b68ee)',
-        'linear-gradient(135deg, #ffd700, #ff6347)',
-      ];
-
-      const savedSongs = data.map(track => {
-        const url = `http://localhost:5000/music/${encodeURIComponent(track.filename)}`;
-        const audio = new Audio(url);
-
-        audio.addEventListener('loadedmetadata', () => {
-          const minutes = Math.floor(audio.duration / 60);
-          const seconds = Math.floor(audio.duration % 60).toString().padStart(2, '0');
-          setLibrary(prev =>
-            prev.map(s => s.id === track.track_id ? { ...s, duration: `${minutes}:${seconds}` } : s)
-          );
-        });
-
-        audio.addEventListener('ended', () => {
-          setLibrary(prev =>
-            prev.map(s => s.id === track.track_id ? { ...s, isPlaying: false, progress: 0 } : s)
-          );
-        });
-
-        audio.addEventListener('timeupdate', () => {
-          if (audio.duration) {
-            const pct = (audio.currentTime / audio.duration) * 100;
-            setLibrary(prev =>
-              prev.map(s => s.id === track.track_id ? { ...s, progress: pct } : s)
-            );
-          }
-        });
-
-        return {
-          id: track.track_id,
-          name: track.title,
-          artist: track.artist || 'Unknown Artist',
-          gradient: gradients[Math.floor(Math.random() * gradients.length)],
-          isPlaying: false,
-          url,
-          audio,
-          duration: '--:--',
-          progress: 0,
-          cover: null,
-        };
-      });
-
-      setLibrary(savedSongs);
-    } catch (error) {
-      console.error('Failed to fetch tracks:', error);
-    }
-  };
-
-  // Load library from DB on page load
-  useEffect(() => {
-    fetchTracks();
-  }, []);
+  
 
   // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
@@ -143,26 +79,12 @@ export default function OffBeat() {
 
 
 
-  const toggleMute = () => {
-    if (isMuted) {
-      const unmuteVolume = Math.min(volume, 0.75);
-      setVolume(unmuteVolume);
-      setIsMuted(false);
-      library.forEach(song => {
-        song.audio.muted = false;
-        song.audio.volume = unmuteVolume;
-      });
-    } else {
-      setIsMuted(true);
-      library.forEach(song => { song.audio.muted = true; });
-    }
-  };
 
-  const changeVolume = (value) => {
-    setVolume(value);
-    setIsMuted(value === 0);
-    library.forEach(song => { song.audio.volume = value; });
-  };
+    const changeVolume = (value) => {
+      setVolume(value);
+      setIsMuted(value === 0);
+      library.forEach(song => { song.audio.volume = value; });
+    };
 
   // File handling
   const handleFiles = (files) => {
@@ -173,6 +95,8 @@ export default function OffBeat() {
   const removeFile = (index) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
+
+  
 
   // Drag and drop handlers
   const handleDragOver = (e) => {
@@ -350,7 +274,7 @@ export default function OffBeat() {
     }));
   };
 
-  // Seek within a track when progress bar is clicked
+  // seek within a track when progress bar clicked
   const seek = (songId, percent) => {
     setLibrary(prev =>
       prev.map(song => {
@@ -394,14 +318,14 @@ export default function OffBeat() {
       });
       const data = await response.json();
       console.log('Playlist created:', data);
-
+      
       const newPlaylist = {
         id: Date.now(),
         name: playlistData.name,
         description: playlistData.description || 'No description',
         songCount: 0
       };
-
+      
       setPlaylists(prev => [...prev, newPlaylist]);
       setPlaylistData({ name: '', description: '' });
       closeModal();
@@ -411,6 +335,72 @@ export default function OffBeat() {
     }
   };
 
+
+    
+
+
+
+    const handleUpload = async () => {
+      if (uploadedFiles.length === 0) return;
+
+      // send files to backend for storage
+      const formData = new FormData();
+      uploadedFiles.forEach(file => {
+        formData.append('file', file); // key matches Flask endpoint
+      });
+
+      try {
+        const response = await fetch('http://localhost:5000/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error('Upload failed');
+        const data = await response.json();
+        // we could use data.filename if backend returns it, but we
+        // still generate objectURLs for immediate playback
+
+        addSongsToLibrary(uploadedFiles);
+        setUploadedFiles([]);
+        closeModal();
+        alert('Upload successful!');
+      } catch (error) {
+        console.error('Upload error:', error);
+        alert('Server error: Make sure your Flask/Express backend is running on port 5000');
+      }
+    };
+    //old handle upload function for reference
+    // const handleUpload = async () => {
+    //   if (uploadedFiles.length === 0) return;
+
+    //   const formData = new FormData();
+    //   uploadedFiles.forEach(file => {
+    //     formData.append('file', file); // file has to match backends expected key
+    //   });
+
+    //   try {
+    //     const response = await fetch('http://localhost:5000/upload', {
+    //       method: 'POST',
+    //       body: formData,
+          
+    //     });
+
+    //     if (!response.ok) throw new Error('Upload failed');
+
+    //     const data = await response.json();
+    
+    //     // Add to local library state so the UI updates immediately
+    //     addSongsToLibrary(uploadedFiles);
+    //     setUploadedFiles([]);
+    //     closeModal();
+    //     alert('Upload successful!');
+    //   } catch (error) {
+    //     console.error('Upload error:', error);
+    //     alert('Server error: Make sure your Flask/Express backend is running on port 5000');
+    //   }
+    // };
+
+  
   return (
     <div className="container">
       {/* Header */}
@@ -432,7 +422,7 @@ export default function OffBeat() {
           <div className="hero-text">
             <h1>Your Personal Music Library</h1>
             <p className="hero-paragraph">
-              Upload your downloaded music collection and organize it beautifully.
+              Upload your downloaded music collection and organize it beautifully. 
               Create playlists, manage your library, and enjoy your favorite tracks offline.
             </p>
             <div className="cta-buttons">
@@ -488,8 +478,8 @@ export default function OffBeat() {
                   <p className="card-artist">{song.artist}</p>
                 </div>
                 <div className="card-meta">
-                  <button
-                    className="play-btn"
+                  <button 
+                    className="play-btn" 
                     onClick={(e) => { e.stopPropagation(); togglePlay(song.id); }}
                   >
                     {song.isPlaying ? '⏸' : '▶'}
@@ -612,7 +602,7 @@ export default function OffBeat() {
           </div>
         </div>
       )}
-
+      
       <div className="soundbar">
         <button className="mute-btn" onClick={toggleMute}>
           {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
@@ -640,8 +630,6 @@ export default function OffBeat() {
     <button className="control-btn" onClick={skipSong} title="Skip">⏭</button>
   </div>
 </div>
-        <span className="volume-label">{Math.round((isMuted ? 0 : volume) * 100)}%</span>
-      </div>
 
       {/* Upload Modal */}
       {activeModal === 'upload' && (
@@ -651,7 +639,7 @@ export default function OffBeat() {
               <h2 className="modal-title">Upload Music</h2>
               <button className="close-modal" onClick={closeModal}>×</button>
             </div>
-
+              
             <label
               className={`upload-area ${isDragging ? 'dragover' : ''}`}
               onDragOver={handleDragOver}
@@ -669,8 +657,8 @@ export default function OffBeat() {
               <h3 className="upload-title">Drop your music files here</h3>
               <p className="upload-subtext">or click to browse</p>
               <p className="upload-formats">Supported formats: MP3, WAV, FLAC, M4A</p>
-            </label>
-
+              </label>
+            
             <div className="file-list">
               {uploadedFiles.map((file, index) => (
                 <div key={index} className="file-item">
