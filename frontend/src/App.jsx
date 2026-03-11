@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
 
@@ -16,6 +16,101 @@ export default function OffBeat() {
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
   
+    // Fetch all tracks from backend and wire up Audio objects
+  const fetchLibrary = () => {
+    const gradients = [
+      'linear-gradient(135deg, #a855f7, #ec4899)',
+      'linear-gradient(135deg, #ff6ec7, #ff9a56)',
+      'linear-gradient(135deg, #05d9ff, #7b68ee)',
+      'linear-gradient(135deg, #ffd700, #ff6347)',
+    ];
+
+    fetch('http://localhost:5000/tracks')
+      .then(res => res.json())
+      .then(tracks => {
+        const loadedSongs = tracks.map(track => {
+          const url = `http://localhost:5000/music/${track.filename}`;
+          const audio = new Audio(url);
+
+          const song = {
+            id: track.track_id,
+            name: track.title,
+            artist: track.artist || 'Unknown Artist',
+            gradient: gradients[Math.floor(Math.random() * gradients.length)],
+            isPlaying: false,
+            url,
+            audio,
+            duration: '--:--',
+            currentTime: '0:00',
+            progress: 0,
+            cover: null,
+            repeatMode: 'none',
+          };
+
+          audio.addEventListener('loadedmetadata', () => {
+            const minutes = Math.floor(audio.duration / 60);
+            const seconds = Math.floor(audio.duration % 60).toString().padStart(2, '0');
+            setLibrary(prev =>
+              prev.map(s => s.id === song.id ? { ...s, duration: `${minutes}:${seconds}` } : s)
+            );
+          });
+
+          audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+              const pct = (audio.currentTime / audio.duration) * 100;
+              const mins = Math.floor(audio.currentTime / 60);
+              const secs = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
+              setLibrary(prev =>
+                prev.map(s =>
+                  s.id === song.id ? { ...s, progress: pct, currentTime: `${mins}:${secs}` } : s
+                )
+              );
+            }
+          });
+
+          audio.addEventListener('ended', () => {
+            setLibrary(prev => {
+              const index = prev.findIndex(s => s.id === song.id);
+              if (index === -1) return prev;
+              const current = prev[index];
+              const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
+
+              if (mode === 'one') {
+                current.audio.currentTime = 0;
+                current.audio.play();
+                const copy = [...prev];
+                copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
+                return copy;
+              }
+
+              if (mode === 'all') {
+                const nextIndex = (index + 1) % prev.length;
+                return prev.map((s, i) => {
+                  if (i === index) return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
+                  if (i === nextIndex) {
+                    s.audio.currentTime = 0;
+                    s.audio.play();
+                    return { ...s, isPlaying: true };
+                  }
+                  return { ...s, isPlaying: false };
+                });
+              }
+
+              return prev.map(s =>
+                s.id === song.id ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' } : s
+              );
+            });
+          });
+
+          return song;
+        });
+
+        setLibrary(loadedSongs);
+      })
+      .catch(err => console.error('Failed to load tracks:', err));
+  };
+
+  useEffect(() => { fetchLibrary(); }, []);
 
   // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
@@ -336,71 +431,28 @@ export default function OffBeat() {
     }
   };
 
+  const handleUpload = async () => {
+  if (uploadedFiles.length === 0) return;
 
-    
+  const formData = new FormData();
+  uploadedFiles.forEach(file => formData.append('file', file));
 
+  try {
+    const response = await fetch('http://localhost:5000/upload', {
+      method: 'POST',
+      body: formData,
+    });
 
+    if (!response.ok) throw new Error('Upload failed');
 
-    const handleUpload = async () => {
-      if (uploadedFiles.length === 0) return;
-
-      // send files to backend for storage
-      const formData = new FormData();
-      uploadedFiles.forEach(file => {
-        formData.append('file', file); // key matches Flask endpoint
-      });
-
-      try {
-        const response = await fetch('http://localhost:5000/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) throw new Error('Upload failed');
-        const data = await response.json();
-        // we could use data.filename if backend returns it, but we
-        // still generate objectURLs for immediate playback
-
-        addSongsToLibrary(uploadedFiles);
-        setUploadedFiles([]);
-        closeModal();
-        alert('Upload successful!');
-      } catch (error) {
-        console.error('Upload error:', error);
-        alert('Server error: Make sure your Flask/Express backend is running on port 5000');
-      }
-    };
-    //old handle upload function for reference
-    // const handleUpload = async () => {
-    //   if (uploadedFiles.length === 0) return;
-
-    //   const formData = new FormData();
-    //   uploadedFiles.forEach(file => {
-    //     formData.append('file', file); // file has to match backends expected key
-    //   });
-
-    //   try {
-    //     const response = await fetch('http://localhost:5000/upload', {
-    //       method: 'POST',
-    //       body: formData,
-          
-    //     });
-
-    //     if (!response.ok) throw new Error('Upload failed');
-
-    //     const data = await response.json();
-    
-    //     // Add to local library state so the UI updates immediately
-    //     addSongsToLibrary(uploadedFiles);
-    //     setUploadedFiles([]);
-    //     closeModal();
-    //     alert('Upload successful!');
-    //   } catch (error) {
-    //     console.error('Upload error:', error);
-    //     alert('Server error: Make sure your Flask/Express backend is running on port 5000');
-    //   }
-    // };
-
+    fetchLibrary();
+    setUploadedFiles([]);
+    closeModal();
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert('Server error: Make sure your Flask backend is running on port 5000');
+  }
+};
   
   return (
     <div className="container">
