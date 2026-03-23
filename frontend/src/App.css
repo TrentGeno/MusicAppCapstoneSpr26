@@ -1180,3 +1180,47 @@ nav a:hover::after {
   font-size: 12px;
   opacity: 0.7;
 }
+
+.google-signin-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 24px;
+}
+
+.signup-text {
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.signup-link {
+  color: #a78bfa;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.signup-link:hover {
+  text-decoration: underline;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #a78bfa;
+}
+
+.user-name {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}

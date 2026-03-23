@@ -48,3 +48,22 @@ def init_db(app: Flask):
             print("✅ Dummy user created (user_id=1)")
         else:
             print("ℹ️ Dummy user already exists")
+            
+            
+def find_or_create_user(email, name, picture):
+    # Check if user already exists
+    user = db.execute(
+        "SELECT * FROM users WHERE email = ?", (email,)
+    ).fetchone()
+    
+    if user:
+        return {"id": user["id"], "email": user["email"], "name": user["name"]}
+    
+    # Create new user if they don't exist
+    db.execute(
+        "INSERT INTO users (email, name, picture) VALUES (?, ?, ?)",
+        (email, name, picture)
+    )
+    db.commit()
+    
+    return {"email": email, "name": name, "picture": picture}
