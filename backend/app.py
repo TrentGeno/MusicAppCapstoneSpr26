@@ -3,6 +3,7 @@ from flask import Flask, request, send_from_directory, jsonify
 from database import db, init_db
 from models import User, Track
 from flask_cors import CORS
+from models import Playlist
 
 app = Flask(__name__)
 init_db(app)
@@ -50,7 +51,8 @@ def upload():
             title=title,
             artist=None,
             album=None,
-            genre=None
+            genre=None,
+            user_id=1  # will replace with logged in user later
         )
         db.session.add(track)
         db.session.commit()
@@ -81,6 +83,56 @@ def get_tracks():
         }
         for t in tracks
     ]), 200
+
+@app.route("/playlist", methods=["POST"])
+def create_playlist():
+    data = request.get_json()
+
+    try:
+        playlist = Playlist(
+            name=data["name"],
+            description=data.get("description"),
+            user_id=1
+        )
+
+        db.session.add(playlist)
+        db.session.commit()
+
+        return jsonify({"message": "Playlist created"}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/playlists", methods=["GET"])
+def get_playlists():
+    playlists = Playlist.query.filter_by(user_id=1).all()
+
+    return jsonify([
+        {
+            "playlist_id": p.playlist_id,
+            "name": p.name,
+            "description": p.description,
+            "track_count": len(p.tracks)
+        }
+        for p in playlists
+    ])
+
+@app.route("/playlist/<int:playlist_id>/add-track", methods=["POST"])
+def add_track_to_playlist(playlist_id):
+    data = request.get_json()
+    track_id = data.get("track_id")
+
+    playlist = Playlist.query.get(playlist_id)
+    track = Track.query.get(track_id)
+
+    if not playlist or not track:
+        return jsonify({"error": "Playlist or Track not found"}), 404
+
+    playlist.tracks.append(track)
+    db.session.commit()
+
+    return jsonify({"message": "Track added to playlist"})
 
 if __name__ == "__main__":
     app.run(debug=True)
