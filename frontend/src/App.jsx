@@ -464,9 +464,9 @@ export default function App(){
       <header className="header">
         <div className="logo">OffBeat</div>
         <nav className="nav">
-          <a href="#library" className="nav-link">Library</a>
-          <a href="#playlists" className="nav-link">Playlists</a>
-          <a href="#artists" className="nav-link">Artists</a>
+          <a href="#library" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('library').scrollIntoView({ behavior: 'smooth' }); }}>Library</a>
+          <a href="#playlists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('playlists').scrollIntoView({ behavior: 'smooth' }); }}>Playlists</a>
+          <a href="#artists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('artists').scrollIntoView({ behavior: 'smooth' }); }}>Artists</a>
         </nav>
         <button className="btn btn-signin" onClick={() => openModal('signin')}>
           Sign In
@@ -501,7 +501,7 @@ export default function App(){
       </section>
 
       {/* Library Section */}
-      <section className="section">
+      <section id="library" className="section">
         <div className="section-header">
           <h2>Your Library</h2>
           <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('upload'); }}>
@@ -582,7 +582,53 @@ export default function App(){
         </div>
       </section>
 
-        {/* Modals */}
+      {/* Playlists Section */}
+      <section id="playlists" className="section">
+        <div className="section-header">
+          <h2>Your Playlists</h2>
+          <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('playlist'); }}>
+            Create Playlist →
+          </a>
+        </div>
+        <div className="music-grid">
+          {playlists.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📁</div>
+              <h3>No playlists yet</h3>
+              <p className="empty-text">Create your first playlist to organize your music</p>
+              <button className="btn btn-primary" onClick={() => openModal('playlist')}>
+                Create Playlist
+              </button>
+            </div>
+          ) : (
+            playlists.map(playlist => (
+              <div key={playlist.id} className="music-card">
+                <div className="card-cover" style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
+                  <span className="cover-initial">📋</span>
+                </div>
+                <div className="card-info">
+                  <h3 className="card-title">{playlist.name}</h3>
+                  <p className="card-artist">{playlist.songCount} songs</p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* Artists Section */}
+      <section id="artists" className="section">
+        <div className="section-header">
+          <h2>Artists</h2>
+        </div>
+        <div className="music-grid">
+          <div className="empty-state">
+            <div className="empty-icon">🎤</div>
+            <h3>Artists section</h3>
+            <p className="empty-text">Artist browsing coming soon</p>
+          </div>
+        </div>
+      </section>
      {activeModal === "playlist" && (
     <PlaylistModal
     playlistData={playlistData}
@@ -611,6 +657,21 @@ export default function App(){
     handleDragLeave={handleDragLeave}
     handleDrop={handleDrop}
   />)}
+
+    {/* Soundbar - only visible when there's a current song */}
+    {currentSongId && (
+      <Soundbar
+        toggleMute={toggleMute}
+        isMuted={isMuted}
+        volume={volume}
+        changeVolume={changeVolume}
+        replaySong={replaySong}
+        handleSoundbarPlay={handleSoundbarPlay}
+        skipSong={skipSong}
+        library={library}
+        currentSongId={currentSongId}
+      />
+    )}
 
     </div>
   );
