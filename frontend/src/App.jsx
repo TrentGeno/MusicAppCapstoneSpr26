@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
-import Soundbar from "./components/Soundbar";
-import PlaylistModal from "./components/modals/PlaylistModal";
-import SignInModal from "./components/modals/SignInModal";
-import UploadModal from "./components/modals/UploadModal";
+import Soundbar from './components/Soundbar';
+import PlaylistModal from './components/modals/PlaylistModal';
+import SignInModal from './components/modals/SignInModal';
+import UploadModal from './components/modals/UploadModal';
 
-export default function App(){
+export default function App() {
   // State management
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [library, setLibrary] = useState([]);
@@ -21,7 +21,7 @@ export default function App(){
   const [currentSongId, setCurrentSongId] = useState(null);
   
     // Fetch all tracks from backend and wire up Audio objects
-  const fetchLibrary = () => {
+  const fetchLibrary = useCallback(() => {
     const gradients = [
       'linear-gradient(135deg, #a855f7, #ec4899)',
       'linear-gradient(135deg, #ff6ec7, #ff9a56)',
@@ -112,9 +112,11 @@ export default function App(){
         setLibrary(loadedSongs);
       })
       .catch(err => console.error('Failed to load tracks:', err));
-  };
+  }, [globalRepeatMode]);
 
-  useEffect(() => { fetchLibrary(); }, []);
+  useEffect(() => {
+    fetchLibrary();
+  }, [fetchLibrary]);
 
   // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
@@ -140,51 +142,52 @@ export default function App(){
   };
 
   // Volume control
-    const toggleMute = () => {
-      if (isMuted) {
-        const unmuteVolume = Math.min(volume, 0.75);
-        setVolume(unmuteVolume);
-        setIsMuted(false);
-        library.forEach(song => {
-          song.audio.muted = false;
-          song.audio.volume = unmuteVolume;
-        });
-      } else {
-        setIsMuted(true);
-        library.forEach(song => { song.audio.muted = true; });
-      }
-    };
-    const skipSong = () => {
-      const index = library.findIndex(s => s.id === currentSongId);
-      const nextIndex = (index + 1) % library.length;
-      if (library[nextIndex]) togglePlay(library[nextIndex].id);
-    };
+  const toggleMute = () => {
+    if (isMuted) {
+      const unmuteVolume = Math.min(volume, 0.75);
+      setVolume(unmuteVolume);
+      setIsMuted(false);
+      library.forEach(song => {
+        song.audio.muted = false;
+        song.audio.volume = unmuteVolume;
+      });
+    } else {
+      setIsMuted(true);
+      library.forEach(song => {
+        song.audio.muted = true;
+      });
+    }
+  };
 
-    const replaySong = () => {
-      const song = library.find(s => s.id === currentSongId);
-      if (song) {
-        song.audio.currentTime = 0;
-        if (!song.isPlaying) togglePlay(song.id);
-      }
-    };
-    const handleSoundbarPlay = () => {
-      if (currentSongId) {
-        togglePlay(currentSongId);
-      } else if (library.length > 0) {
-        togglePlay(library[0].id);
-      }
-    };
+  const skipSong = () => {
+    const index = library.findIndex(s => s.id === currentSongId);
+    const nextIndex = (index + 1) % library.length;
+    if (library[nextIndex]) togglePlay(library[nextIndex].id);
+  };
 
+  const replaySong = () => {
+    const song = library.find(s => s.id === currentSongId);
+    if (song) {
+      song.audio.currentTime = 0;
+      if (!song.isPlaying) togglePlay(song.id);
+    }
+  };
 
+  const handleSoundbarPlay = () => {
+    if (currentSongId) {
+      togglePlay(currentSongId);
+    } else if (library.length > 0) {
+      togglePlay(library[0].id);
+    }
+  };
 
-
-
-
-    const changeVolume = (value) => {
-      setVolume(value);
-      setIsMuted(value === 0);
-      library.forEach(song => { song.audio.volume = value; });
-    };
+  const changeVolume = (value) => {
+    setVolume(value);
+    setIsMuted(value === 0);
+    library.forEach(song => {
+      song.audio.volume = value;
+    });
+  };
 
   // File handling
   const handleFiles = (files) => {
@@ -214,148 +217,7 @@ export default function App(){
     handleFiles(e.dataTransfer.files);
   };
 
-  // Add songs to library and prepare audio elements for playback
-  const addSongsToLibrary = (files) => {
-    const gradients = [
-      'linear-gradient(135deg, #a855f7, #ec4899)',
-      'linear-gradient(135deg, #ff6ec7, #ff9a56)',
-      'linear-gradient(135deg, #05d9ff, #7b68ee)',
-      'linear-gradient(135deg, #ffd700, #ff6347)',
-    ];
 
-    const newSongs = files.map(file => {
-      const url = URL.createObjectURL(file);
-      const audio = new Audio(url);
-
-      const song = {
-        id: Date.now() + Math.random(),
-        name: file.name.replace(/\.[^/.]+$/, ""),
-        artist: 'Unknown Artist',
-        gradient: gradients[Math.floor(Math.random() * gradients.length)],
-        isPlaying: false,
-        url,
-        audio,
-        duration: '--:--',
-        currentTime: '0:00',
-        progress: 0,
-        cover: null,
-        repeatMode: 'none',
-      };
-
-      // populate duration once metadata is loaded
-      audio.addEventListener('loadedmetadata', () => {
-        const minutes = Math.floor(audio.duration / 60);
-        const seconds = Math.floor(audio.duration % 60)
-          .toString()
-          .padStart(2, '0');
-        setLibrary(prev =>
-          prev.map(s =>
-            s.id === song.id ? { ...s, duration: `${minutes}:${seconds}` } : s
-          )
-        );
-      });
-      
-      // attempt to read metadata (cover art + artist) from file
-      JsMediaTags.read(file, {
-        onSuccess: (tag) => {
-          // update cover art if available
-          const picture = tag.tags.picture;
-          if (picture) {
-            let base64String = '';
-            const byteArray = picture.data;
-            for (let i = 0; i < byteArray.length; i++) {
-              base64String += String.fromCharCode(byteArray[i]);
-            }
-            const imageUrl = `data:${picture.format};base64,${btoa(base64String)}`;
-
-            setLibrary(prev =>
-              prev.map(s =>
-                s.id === song.id ? { ...s, cover: imageUrl } : s
-              )
-            );
-          }
-
-          // update artist if metadata contains it
-          const artistTag = tag.tags.artist;
-          if (artistTag) {
-            setLibrary(prev =>
-              prev.map(s =>
-                s.id === song.id ? { ...s, artist: artistTag } : s
-              )
-            );
-          }
-        },
-        onError: (error) => {
-          console.warn('jsmediatags error', error);
-        }
-      });
-
-      audio.addEventListener('ended', () => {
-        setLibrary(prev => {
-          const index = prev.findIndex(s => s.id === song.id);
-          if (index === -1) return prev;
-
-          const current = prev[index];
-          const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
-
-          if (mode === 'one') {
-            // restart same track
-            current.audio.currentTime = 0;
-            current.audio.play();
-            const copy = [...prev];
-            copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
-            return copy;
-          }
-
-          if (mode === 'all') {
-            // move to next track (wrap around)
-            const nextIndex = (index + 1) % prev.length;
-            const copy = prev.map((s, i) => {
-              if (i === index) {
-                return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
-              }
-              if (i === nextIndex) {
-                s.audio.currentTime = 0;
-                s.audio.play();
-                return { ...s, isPlaying: true, progress: 0, currentTime: '0:00', repeatMode: mode };
-              }
-              return { ...s, isPlaying: false, repeatMode: 'none' };
-            });
-            return copy;
-          }
-
-          // no repeat
-          return prev.map(s =>
-            s.id === song.id
-              ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' }
-              : s
-          );
-        });
-      });
-
-      // update progress and elapsed time as the track plays
-      audio.addEventListener('timeupdate', () => {
-        if (audio.duration) {
-          const pct = (audio.currentTime / audio.duration) * 100;
-          const mins = Math.floor(audio.currentTime / 60);
-          const secs = Math.floor(audio.currentTime % 60)
-            .toString()
-            .padStart(2, '0');
-          setLibrary(prev =>
-            prev.map(s =>
-              s.id === song.id
-                ? { ...s, progress: pct, currentTime: `${mins}:${secs}` }
-                : s
-            )
-          );
-        }
-      });
-
-      return song;
-    });
-
-    setLibrary(prev => [...prev, ...newSongs]);
-  };
 
   // Toggle play/pause and ensure only one track plays at a time
   const togglePlay = (songId) => {
