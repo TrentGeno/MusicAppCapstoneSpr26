@@ -12,7 +12,7 @@ export default function App() {
   const [library, setLibrary] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
-  const [signInData, setSignInData] = useState({ email: '', password: '' });
+  const [user, setUser] = useState(null);
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
@@ -122,24 +122,6 @@ export default function App() {
   const openModal = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
 
-  // Sign In Handler
-  const handleSignIn = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('http://localhost:5000/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signInData)
-      });
-      const data = await response.json();
-      console.log('Sign in response:', data);
-      closeModal();
-      setSignInData({ email: '', password: '' });
-    } catch (error) {
-      console.error('Sign in error:', error);
-      alert('Sign in failed. Please check your credentials.');
-    }
-  };
 
   // Volume control
   const toggleMute = () => {
@@ -330,8 +312,15 @@ export default function App() {
           <a href="#playlists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('playlists').scrollIntoView({ behavior: 'smooth' }); }}>Playlists</a>
           <a href="#artists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('artists').scrollIntoView({ behavior: 'smooth' }); }}>Artists</a>
         </nav>
-        <button className="btn btn-signin" onClick={() => openModal('signin')}>
-          Sign In
+        <button className="btn btn-signin" onClick={() => !user && openModal('signin')}>
+          {user ? (
+            <div className="user-info" onClick={() => setUser(null)}>  {/* click to sign out */}
+              <img src={user.picture} alt="avatar" className="user-avatar" />
+              <span className="user-name">{user.name}</span>
+            </div>
+          ) : (
+            'Sign In'
+          )}
         </button>
       </header>
 
@@ -500,12 +489,15 @@ export default function App() {
     />)}
 
       {activeModal === "signin" && (
-  <SignInModal
-    signInData={signInData}
-    setSignInData={setSignInData}
-    handleSignIn={handleSignIn}
-    closeModal={closeModal}
-    />)}
+        <SignInModal
+         handleGoogleSignIn={(response) => {
+            const payload = JSON.parse(atob(response.credential.split(".")[1]));
+            setUser({ email: payload.email, name: payload.name, picture: payload.picture });
+            closeModal();
+          }}
+          closeModal={closeModal}
+        />
+      )}
 
     {activeModal === "upload" && (
   <UploadModal
