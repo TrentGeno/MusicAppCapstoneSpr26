@@ -1,10 +1,9 @@
 from database import db
 from datetime import datetime
 
-# Association table for Playlist <-> Track (many-to-many)
 playlist_tracks = db.Table('playlist_tracks',
-    db.Column('playlist_id', db.Integer, db.ForeignKey('playlists.playlist_id')),
-    db.Column('track_id', db.Integer, db.ForeignKey('tracks.track_id'))
+    db.Column('playlist_id', db.Integer, db.ForeignKey('playlists.playlist_id'), primary_key=True),
+    db.Column('track_id', db.Integer, db.ForeignKey('tracks.track_id'), primary_key=True)
 )
 
 class User(db.Model):
@@ -14,6 +13,9 @@ class User(db.Model):
     email = db.Column(db.String(100), nullable=False, unique=True)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    profile_picture = db.Column(db.String(500))
+    oauth_provider = db.Column(db.String(50))
 
     tracks = db.relationship('Track', backref='user', lazy=True)
     playlists = db.relationship('Playlist', backref='user', lazy=True)
