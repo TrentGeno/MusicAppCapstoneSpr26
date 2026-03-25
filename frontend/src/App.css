@@ -443,6 +443,43 @@ nav a:hover::after {
     position: relative;
     margin-left: auto;
 }
+.playback-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding-left: 1rem;
+}
+.play-pause-btn {
+  font-size: 1.6rem;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+}
+
+.play-pause-btn:hover {
+  transform: scale(1.15);
+  
+}
+
+.control-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3rem;
+  padding: 0;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.control-btn:hover {
+  transform: scale(1.2);
+}
 
 .play-btn {
     width: 40px;
@@ -721,7 +758,7 @@ nav a:hover::after {
     cursor: pointer;
     transition: all 0.3s ease;
     margin-bottom: 1.5rem;
-    display: block; 
+    display: block;
 }
 
 .upload-area:hover {
@@ -730,6 +767,26 @@ nav a:hover::after {
 }
 
 .upload-area.dragover {
+    border-color: var(--accent-pink);
+    background: rgba(255, 110, 199, 0.1);
+}
+
+.drop-zone {
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.drop-zone:hover {
+    border-color: var(--accent-purple);
+    background: rgba(185, 103, 255, 0.05);
+}
+
+.drop-zone.dragging {
     border-color: var(--accent-pink);
     background: rgba(255, 110, 199, 0.1);
 }
@@ -759,13 +816,15 @@ nav a:hover::after {
     font-size: 0.9rem;
 }
 
-.remove-file {
-    background: none;
-    border: none;
-    color: var(--accent-pink);
+.file-input-label {
     cursor: pointer;
-    font-size: 1.2rem;
-    padding: 0 0.5rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
 }
 
 /* Animations */
@@ -1140,6 +1199,7 @@ nav a:hover::after {
   opacity: 0.7;
 }
 
+<<<<<<< HEAD
 /* Top bar wrapper */
 .playlist-topbar {
   height: 72px;
@@ -1147,4 +1207,48 @@ nav a:hover::after {
   align-items: center;
   padding: 0 48px;
   background: #0a0a0f;
+=======
+.google-signin-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 24px;
+}
+
+.signup-text {
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.signup-link {
+  color: #a78bfa;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.signup-link:hover {
+  text-decoration: underline;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #a78bfa;
+}
+
+.user-name {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+>>>>>>> c80e5256e9b5679608157d4eae9b962f990012a4
 }

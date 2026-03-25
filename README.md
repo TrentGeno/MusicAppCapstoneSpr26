@@ -1,36 +1,53 @@
-Setup
+# Music App
 
-Frontend: 
-Create frontend folder 
+A full-stack music library application built with React and Flask.
 
-npm create vite@latest frontend 
+## Setup
 
-  choose react 
-  next choose JavaScript + SWC 
+### Frontend
+```bash
+# Create frontend folder
+mkdir frontend
+cd frontend
 
-cd frontend 
-npm install 
+# Create Vite React project
+npm create vite@latest . -- --template react -- --variant js+swc
 
-Backend: 
-Create backend folder 
+# Install dependencies
+npm install
+```
 
-cd backend 
-Python –m venv venv 
-Venv\Scripts\activate 
- 
+### Backend
+```bash
+# Create backend folder
+mkdir backend
+cd backend
 
-In main project terminal 	 
+# Create virtual environment
+python -m venv venv
+venv\Scripts\activate  # On Windows
+# or
+source venv/bin/activate  # On macOS/Linux
 
-Pip install flask flask-cors 
-Pip freeze > requirements.txt 
- 
+# Install dependencies
+pip install flask flask-cors flask-sqlalchemy flask-jwt-extended
+pip freeze > requirements.txt
+```
 
-Run project: 
+## Running the Project
 
-Start Flask Server:
-Cd backend 
-Python app.py 
+### Start Flask Backend
+```bash
+cd backend
+python app.py
+```
 
-Start React:
+### Start React Frontend
+```bash
 cd frontend
 npm run dev
+```
+
+The application will be available at:
+- Frontend: http://localhost:5174
+- Backend API: http://localhost:5000
