@@ -3,6 +3,9 @@ from flask import Flask, request, send_from_directory, jsonify
 from database import db, init_db
 from models import User, Track
 from flask_cors import CORS
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from database import find_or_create_user
 from models import Playlist
 
 app = Flask(__name__)
@@ -12,6 +15,35 @@ CORS(app)
 UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+
+
+GOOGLE_CLIENT_ID = "246868796255-a8bgcc7v21g956ghn2emcreh0ibp51d9.apps.googleusercontent.com"
+
+@app.route("/api/auth/google", methods=["POST"])
+def google_signin():
+    token = request.json.get("token")
+    
+    try:
+        # Verify the token with Google
+        payload = id_token.verify_oauth2_token(
+            token,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID
+        )
+        
+        email = payload["email"]
+        name = payload.get("name")
+        picture = payload.get("picture")
+        
+        # Save or find the user in your DB
+        user = find_or_create_user(email, name, picture)
+        
+        return jsonify({"user": user})
+    
+    except ValueError:
+        return jsonify({"error": "Invalid token"}), 401
+
 
 
 @app.route('/test-db')
