@@ -1,71 +1,177 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
 import Playlist from './Playlist';
+import Soundbar from './components/Soundbar';
+import PlaylistModal from './components/modals/PlaylistModal';
+import SignInModal from './components/modals/SignInModal';
+import UploadModal from './components/modals/UploadModal';
 
-export default function OffBeat() {
+export default function App() {
   // State management
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [library, setLibrary] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
-  const [signInData, setSignInData] = useState({ email: '', password: '' });
+  const [user, setUser] = useState(null);
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showPlaylistPage, setShowPlaylistPage] = useState(false);
+  const [currentSongId, setCurrentSongId] = useState(null);
   
+    // Fetch all tracks from backend and wire up Audio objects
+  const fetchLibrary = useCallback(() => {
+    const gradients = [
+      'linear-gradient(135deg, #a855f7, #ec4899)',
+      'linear-gradient(135deg, #ff6ec7, #ff9a56)',
+      'linear-gradient(135deg, #05d9ff, #7b68ee)',
+      'linear-gradient(135deg, #ffd700, #ff6347)',
+    ];
+
+    fetch('http://localhost:5000/tracks')
+      .then(res => res.json())
+      .then(tracks => {
+        const loadedSongs = tracks.map(track => {
+          const url = `http://localhost:5000/music/${track.filename}`;
+          const audio = new Audio(url);
+
+          const song = {
+            id: track.track_id,
+            name: track.title,
+            artist: track.artist || 'Unknown Artist',
+            gradient: gradients[Math.floor(Math.random() * gradients.length)],
+            isPlaying: false,
+            url,
+            audio,
+            duration: '--:--',
+            currentTime: '0:00',
+            progress: 0,
+            cover: null,
+            repeatMode: 'none',
+          };
+
+          audio.addEventListener('loadedmetadata', () => {
+            const minutes = Math.floor(audio.duration / 60);
+            const seconds = Math.floor(audio.duration % 60).toString().padStart(2, '0');
+            setLibrary(prev =>
+              prev.map(s => s.id === song.id ? { ...s, duration: `${minutes}:${seconds}` } : s)
+            );
+          });
+
+          audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+              const pct = (audio.currentTime / audio.duration) * 100;
+              const mins = Math.floor(audio.currentTime / 60);
+              const secs = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
+              setLibrary(prev =>
+                prev.map(s =>
+                  s.id === song.id ? { ...s, progress: pct, currentTime: `${mins}:${secs}` } : s
+                )
+              );
+            }
+          });
+
+          audio.addEventListener('ended', () => {
+            setLibrary(prev => {
+              const index = prev.findIndex(s => s.id === song.id);
+              if (index === -1) return prev;
+              const current = prev[index];
+              const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
+
+              if (mode === 'one') {
+                current.audio.currentTime = 0;
+                current.audio.play();
+                const copy = [...prev];
+                copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
+                return copy;
+              }
+
+              if (mode === 'all') {
+                const nextIndex = (index + 1) % prev.length;
+                return prev.map((s, i) => {
+                  if (i === index) return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
+                  if (i === nextIndex) {
+                    s.audio.currentTime = 0;
+                    s.audio.play();
+                    return { ...s, isPlaying: true };
+                  }
+                  return { ...s, isPlaying: false };
+                });
+              }
+
+              return prev.map(s =>
+                s.id === song.id ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' } : s
+              );
+            });
+          });
+
+          return song;
+        });
+
+        setLibrary(loadedSongs);
+      })
+      .catch(err => console.error('Failed to load tracks:', err));
+  }, [globalRepeatMode]);
+
+  useEffect(() => {
+    fetchLibrary();
+  }, [fetchLibrary]);
 
   // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
 
-  // Sign In Handler
-  const handleSignIn = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('http://localhost:5000/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signInData)
+
+  // Volume control
+  const toggleMute = () => {
+    if (isMuted) {
+      const unmuteVolume = Math.min(volume, 0.75);
+      setVolume(unmuteVolume);
+      setIsMuted(false);
+      library.forEach(song => {
+        song.audio.muted = false;
+        song.audio.volume = unmuteVolume;
       });
-      const data = await response.json();
-      console.log('Sign in response:', data);
-      closeModal();
-      setSignInData({ email: '', password: '' });
-    } catch (error) {
-      console.error('Sign in error:', error);
-      alert('Sign in failed. Please check your credentials.');
+    } else {
+      setIsMuted(true);
+      library.forEach(song => {
+        song.audio.muted = true;
+      });
     }
   };
 
-  // Volume control
-    const toggleMute = () => {
-      if (isMuted) {
-        const unmuteVolume = Math.min(volume, 0.75);
-        setVolume(unmuteVolume);
-        setIsMuted(false);
-        library.forEach(song => {
-          song.audio.muted = false;
-          song.audio.volume = unmuteVolume;
-        });
-      } else {
-        setIsMuted(true);
-        library.forEach(song => { song.audio.muted = true; });
-      }
-    };
+  const skipSong = () => {
+    const index = library.findIndex(s => s.id === currentSongId);
+    const nextIndex = (index + 1) % library.length;
+    if (library[nextIndex]) togglePlay(library[nextIndex].id);
+  };
 
+  const replaySong = () => {
+    const song = library.find(s => s.id === currentSongId);
+    if (song) {
+      song.audio.currentTime = 0;
+      if (!song.isPlaying) togglePlay(song.id);
+    }
+  };
 
+  const handleSoundbarPlay = () => {
+    if (currentSongId) {
+      togglePlay(currentSongId);
+    } else if (library.length > 0) {
+      togglePlay(library[0].id);
+    }
+  };
 
-
-
-    const changeVolume = (value) => {
-      setVolume(value);
-      setIsMuted(value === 0);
-      library.forEach(song => { song.audio.volume = value; });
-    };
+  const changeVolume = (value) => {
+    setVolume(value);
+    setIsMuted(value === 0);
+    library.forEach(song => {
+      song.audio.volume = value;
+    });
+  };
 
   // File handling
   const handleFiles = (files) => {
@@ -95,176 +201,24 @@ export default function OffBeat() {
     handleFiles(e.dataTransfer.files);
   };
 
-  // Add songs to library and prepare audio elements for playback
-  const addSongsToLibrary = (files) => {
-    const gradients = [
-      'linear-gradient(135deg, #a855f7, #ec4899)',
-      'linear-gradient(135deg, #ff6ec7, #ff9a56)',
-      'linear-gradient(135deg, #05d9ff, #7b68ee)',
-      'linear-gradient(135deg, #ffd700, #ff6347)',
-    ];
 
-    const newSongs = files.map(file => {
-      const url = URL.createObjectURL(file);
-      const audio = new Audio(url);
-
-      const song = {
-        id: Date.now() + Math.random(),
-        name: file.name.replace(/\.[^/.]+$/, ""),
-        artist: 'Unknown Artist',
-        gradient: gradients[Math.floor(Math.random() * gradients.length)],
-        isPlaying: false,
-        url,
-        audio,
-        duration: '--:--',
-        currentTime: '0:00',
-        progress: 0,
-        cover: null,
-        repeatMode: 'none',
-      };
-
-      // populate duration once metadata is loaded
-      audio.addEventListener('loadedmetadata', () => {
-        const minutes = Math.floor(audio.duration / 60);
-        const seconds = Math.floor(audio.duration % 60)
-          .toString()
-          .padStart(2, '0');
-        setLibrary(prev =>
-          prev.map(s =>
-            s.id === song.id ? { ...s, duration: `${minutes}:${seconds}` } : s
-          )
-        );
-      });
-      
-      // attempt to read metadata (cover art + artist) from file
-      JsMediaTags.read(file, {
-        onSuccess: (tag) => {
-          // update cover art if available
-          const picture = tag.tags.picture;
-          if (picture) {
-            let base64String = '';
-            const byteArray = picture.data;
-            for (let i = 0; i < byteArray.length; i++) {
-              base64String += String.fromCharCode(byteArray[i]);
-            }
-            const imageUrl = `data:${picture.format};base64,${btoa(base64String)}`;
-
-            setLibrary(prev =>
-              prev.map(s =>
-                s.id === song.id ? { ...s, cover: imageUrl } : s
-              )
-            );
-          }
-
-          // update artist if metadata contains it
-          const artistTag = tag.tags.artist;
-          if (artistTag) {
-            setLibrary(prev =>
-              prev.map(s =>
-                s.id === song.id ? { ...s, artist: artistTag } : s
-              )
-            );
-          }
-        },
-        onError: (error) => {
-          console.warn('jsmediatags error', error);
-        }
-      });
-
-      audio.addEventListener('ended', () => {
-        setLibrary(prev => {
-          const index = prev.findIndex(s => s.id === song.id);
-          if (index === -1) return prev;
-
-          const current = prev[index];
-          const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
-
-          if (mode === 'one') {
-            // restart same track
-            current.audio.currentTime = 0;
-            current.audio.play();
-            const copy = [...prev];
-            copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
-            return copy;
-          }
-
-          if (mode === 'all') {
-            // move to next track (wrap around)
-            const nextIndex = (index + 1) % prev.length;
-            const copy = prev.map((s, i) => {
-              if (i === index) {
-                return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
-              }
-              if (i === nextIndex) {
-                s.audio.currentTime = 0;
-                s.audio.play();
-                return { ...s, isPlaying: true, progress: 0, currentTime: '0:00', repeatMode: mode };
-              }
-              return { ...s, isPlaying: false, repeatMode: 'none' };
-            });
-            return copy;
-          }
-
-          // no repeat
-          return prev.map(s =>
-            s.id === song.id
-              ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' }
-              : s
-          );
-        });
-      });
-
-      // update progress and elapsed time as the track plays
-      audio.addEventListener('timeupdate', () => {
-        if (audio.duration) {
-          const pct = (audio.currentTime / audio.duration) * 100;
-          const mins = Math.floor(audio.currentTime / 60);
-          const secs = Math.floor(audio.currentTime % 60)
-            .toString()
-            .padStart(2, '0');
-          setLibrary(prev =>
-            prev.map(s =>
-              s.id === song.id
-                ? { ...s, progress: pct, currentTime: `${mins}:${secs}` }
-                : s
-            )
-          );
-        }
-      });
-
-      return song;
-    });
-
-    setLibrary(prev => [...prev, ...newSongs]);
-  };
 
   // Toggle play/pause and ensure only one track plays at a time
   const togglePlay = (songId) => {
-    setLibrary(prev =>
-      prev.map(song => {
-        if (song.id === songId) {
-          const newState = !song.isPlaying;
-          if (newState) {
-            // if starting a different song, clear repeat mode
-            if (globalRepeatMode !== song.repeatMode) {
-              setGlobalRepeatMode('none');
-            }
-          }
-          if (song.isPlaying) {
-            song.audio.pause();
-          } else {
-            song.audio.play();
-          }
-          return { ...song, isPlaying: newState };
-        }
-        // pause any other track that might be playing and clear their repeatMode
+    setCurrentSongId(songId);
+    setLibrary(prev => prev.map(song => {
+      if (song.id === songId) {
         if (song.isPlaying) {
           song.audio.pause();
+        } else {
+          song.audio.play();
         }
-        return { ...song, isPlaying: false, repeatMode: 'none' };
-      })
-    );
-  }; 
+        return { ...song, isPlaying: !song.isPlaying };
+      }
+      if (song.isPlaying) song.audio.pause();
+      return { ...song, isPlaying: false };
+    }));
+  };
 
   // seek within a track when progress bar clicked
   const seek = (songId, percent) => {
@@ -327,71 +281,28 @@ export default function OffBeat() {
     }
   };
 
+  const handleUpload = async () => {
+  if (uploadedFiles.length === 0) return;
 
-    
+  const formData = new FormData();
+  uploadedFiles.forEach(file => formData.append('file', file));
 
+  try {
+    const response = await fetch('http://localhost:5000/upload', {
+      method: 'POST',
+      body: formData,
+    });
 
+    if (!response.ok) throw new Error('Upload failed');
 
-    const handleUpload = async () => {
-      if (uploadedFiles.length === 0) return;
-
-      // send files to backend for storage
-      const formData = new FormData();
-      uploadedFiles.forEach(file => {
-        formData.append('file', file); // key matches Flask endpoint
-      });
-
-      try {
-        const response = await fetch('http://localhost:5000/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) throw new Error('Upload failed');
-        const data = await response.json();
-        // we could use data.filename if backend returns it, but we
-        // still generate objectURLs for immediate playback
-
-        addSongsToLibrary(uploadedFiles);
-        setUploadedFiles([]);
-        closeModal();
-        alert('Upload successful!');
-      } catch (error) {
-        console.error('Upload error:', error);
-        alert('Server error: Make sure your Flask/Express backend is running on port 5000');
-      }
-    };
-    //old handle upload function for reference
-    // const handleUpload = async () => {
-    //   if (uploadedFiles.length === 0) return;
-
-    //   const formData = new FormData();
-    //   uploadedFiles.forEach(file => {
-    //     formData.append('file', file); // file has to match backends expected key
-    //   });
-
-    //   try {
-    //     const response = await fetch('http://localhost:5000/upload', {
-    //       method: 'POST',
-    //       body: formData,
-          
-    //     });
-
-    //     if (!response.ok) throw new Error('Upload failed');
-
-    //     const data = await response.json();
-    
-    //     // Add to local library state so the UI updates immediately
-    //     addSongsToLibrary(uploadedFiles);
-    //     setUploadedFiles([]);
-    //     closeModal();
-    //     alert('Upload successful!');
-    //   } catch (error) {
-    //     console.error('Upload error:', error);
-    //     alert('Server error: Make sure your Flask/Express backend is running on port 5000');
-    //   }
-    // };
-
+    fetchLibrary();
+    setUploadedFiles([]);
+    closeModal();
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert('Server error: Make sure your Flask backend is running on port 5000');
+  }
+};
   
   return (
     <div className="container">
@@ -399,12 +310,19 @@ export default function OffBeat() {
       <header className="header">
         <div className="logo">OffBeat</div>
         <nav className="nav">
-        <button className="nav-link" onClick={() => setRoute('home')}>Library</button>
-        <button className="nav-link" onClick={() => setShowPlaylistPage(true)}>Playlists</button>
-        <button className="nav-link" onClick={() => setRoute('artists')}>Artists</button>
+        <button className="nav-link" onClick={() => setRoute('home')} onClick={(e) => { e.preventDefault(); document.getElementById('library').scrollIntoView({ behavior: 'smooth' }); }}>Library</button>
+        <button className="nav-link" onClick={() => setShowPlaylistPage(true)} onClick={(e) => { e.preventDefault(); document.getElementById('playlists').scrollIntoView({ behavior: 'smooth' }); }}>Playlists</button>
+        <button className="nav-link" onClick={() => setRoute('artists')} onClick={(e) => { e.preventDefault(); document.getElementById('artists').scrollIntoView({ behavior: 'smooth' }); }}>Artists</button>
         </nav>
-        <button className="btn btn-signin" onClick={() => openModal('signin')}>
-          Sign In
+        <button className="btn btn-signin" onClick={() => !user && openModal('signin')}>
+          {user ? (
+            <div className="user-info" onClick={() => setUser(null)}>  {/* click to sign out */}
+              <img src={user.picture} alt="avatar" className="user-avatar" />
+              <span className="user-name">{user.name}</span>
+            </div>
+          ) : (
+            'Sign In'
+          )}
         </button>
       </header>
 
@@ -457,7 +375,7 @@ export default function OffBeat() {
       </section>
 
       {/* Library Section */}
-      <section className="section">
+      <section id="library" className="section">
         <div className="section-header">
           <h2>Your Library</h2>
           <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('upload'); }}>
@@ -539,17 +457,17 @@ export default function OffBeat() {
       </section>
 
       {/* Playlists Section */}
-      <section className="section">
+      <section id="playlists" className="section">
         <div className="section-header">
           <h2>Your Playlists</h2>
           <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('playlist'); }}>
-            New Playlist →
+            Create Playlist →
           </a>
         </div>
         <div className="music-grid">
           {playlists.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">🎧</div>
+              <div className="empty-icon">📁</div>
               <h3>No playlists yet</h3>
               <p className="empty-text">Create your first playlist to organize your music</p>
               <button className="btn btn-primary" onClick={() => openModal('playlist')}>
@@ -559,16 +477,12 @@ export default function OffBeat() {
           ) : (
             playlists.map(playlist => (
               <div key={playlist.id} className="music-card">
-                <div className="card-cover" style={{ background: 'linear-gradient(135deg, #7b68ee, #05d9ff)' }}>
-                  🎧
+                <div className="card-cover" style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
+                  <span className="cover-initial">📋</span>
                 </div>
                 <div className="card-info">
                   <h3 className="card-title">{playlist.name}</h3>
-                  <p className="card-artist">{playlist.description}</p>
-                </div>
-                <div className="card-meta">
-                  <button className="play-btn">▶</button>
-                  <span className="duration">{playlist.songCount} songs</span>
+                  <p className="card-artist">{playlist.songCount} songs</p>
                 </div>
               </div>
             ))
@@ -576,145 +490,66 @@ export default function OffBeat() {
         </div>
       </section>
 
-      {/* Sign In Modal */}
-      {activeModal === 'signin' && (
-        <div className="modal" onClick={(e) => e.target === e.currentTarget && closeModal()}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Sign In</h2>
-              <button className="close-modal" onClick={closeModal}>×</button>
-            </div>
-            <form onSubmit={handleSignIn}>
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={signInData.email}
-                  onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={signInData.password}
-                  onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
-                  required
-                />
-              </div>
-              <button type="submit" className="btn btn-primary btn-full-width">
-                Sign In
-              </button>
-              <p className="signup-text">
-                Don't have an account? <a href="#" className="signup-link">Sign up</a>
-              </p>
-            </form>
+      {/* Artists Section */}
+      <section id="artists" className="section">
+        <div className="section-header">
+          <h2>Artists</h2>
+        </div>
+        <div className="music-grid">
+          <div className="empty-state">
+            <div className="empty-icon">🎤</div>
+            <h3>Artists section</h3>
+            <p className="empty-text">Artist browsing coming soon</p>
           </div>
         </div>
-      )}
-      
-      <div className="soundbar">
-        <button className="mute-btn" onClick={toggleMute}>
-          {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
-        </button>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={isMuted ? 0 : volume}
-          onChange={(e) => changeVolume(parseFloat(e.target.value))}
-          className="volume-slider"
+      </section>
+     {activeModal === "playlist" && (
+    <PlaylistModal
+    playlistData={playlistData}
+    setPlaylistData={setPlaylistData}
+    handleCreatePlaylist={handleCreatePlaylist}
+    closeModal={closeModal}
+    />)}
+
+      {activeModal === "signin" && (
+        <SignInModal
+         handleGoogleSignIn={(response) => {
+            const payload = JSON.parse(atob(response.credential.split(".")[1]));
+            setUser({ email: payload.email, name: payload.name, picture: payload.picture });
+            closeModal();
+          }}
+          closeModal={closeModal}
         />
-        <span className="volume-label">{Math.round((isMuted ? 0 : volume) * 100)}%</span>
-        </div>
-
-      {/* Upload Modal */}
-      {activeModal === 'upload' && (
-        <div className="modal" onClick={(e) => e.target === e.currentTarget && closeModal()}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Upload Music</h2>
-              <button className="close-modal" onClick={closeModal}>×</button>
-            </div>
-              
-            <label
-              className={`upload-area ${isDragging ? 'dragover' : ''}`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <input
-                type="file"
-                style={{ opacity: 0.5 }}
-                accept="audio/*"
-                multiple
-                onChange={(e) => handleFiles(e.target.files)}
-              />
-              <div className="upload-icon">📁</div>
-              <h3 className="upload-title">Drop your music files here</h3>
-              <p className="upload-subtext">or click to browse</p>
-              <p className="upload-formats">Supported formats: MP3, WAV, FLAC, M4A</p>
-              </label>
-
-            <div className="file-list">
-              {uploadedFiles.map((file, index) => (
-                <div key={index} className="file-item">
-                  <span>🎵 {file.name}</span>
-                  <button className="remove-file" onClick={() => removeFile(index)}>×</button>
-                </div>
-              ))}
-            </div>
-            <button
-              className="btn btn-primary btn-full-width"
-              style={{ marginTop: '1rem', opacity: uploadedFiles.length === 0 ? 0.5 : 1 }}
-              onClick={handleUpload}
-              disabled={uploadedFiles.length === 0}
-            >
-              Upload Files
-            </button>
-          </div>
-        </div>
       )}
 
-      {/* Create Playlist Modal */}
-      {activeModal === 'playlist' && (
-        <div className="modal" onClick={(e) => e.target === e.currentTarget && closeModal()}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Create Playlist</h2>
-              <button className="close-modal" onClick={closeModal}>×</button>
-            </div>
-            <form onSubmit={handleCreatePlaylist}>
-              <div className="form-group">
-                <label>Playlist Name</label>
-                <input
-                  type="text"
-                  placeholder="My Awesome Playlist"
-                  value={playlistData.name}
-                  onChange={(e) => setPlaylistData({ ...playlistData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Description (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="A collection of my favorite tracks"
-                  value={playlistData.description}
-                  onChange={(e) => setPlaylistData({ ...playlistData, description: e.target.value })}
-                />
-              </div>
-              <button type="submit" className="btn btn-primary btn-full-width">
-                Create Playlist
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+    {activeModal === "upload" && (
+  <UploadModal
+    uploadedFiles={uploadedFiles}
+    handleFiles={handleFiles}
+    removeFile={removeFile}
+    handleUpload={handleUpload}
+    closeModal={closeModal}
+    isDragging={isDragging}
+    handleDragOver={handleDragOver}
+    handleDragLeave={handleDragLeave}
+    handleDrop={handleDrop}
+  />)}
+
+    {/* Soundbar - only visible when there's a current song */}
+    {currentSongId && (
+      <Soundbar
+        toggleMute={toggleMute}
+        isMuted={isMuted}
+        volume={volume}
+        changeVolume={changeVolume}
+        replaySong={replaySong}
+        handleSoundbarPlay={handleSoundbarPlay}
+        skipSong={skipSong}
+        library={library}
+        currentSongId={currentSongId}
+      />
+    )}
+
     </div>
   );
 }
