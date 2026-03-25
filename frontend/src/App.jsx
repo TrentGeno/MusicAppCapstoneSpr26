@@ -12,13 +12,16 @@ export default function App() {
   const [library, setLibrary] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
-  const [user, setUser] = useState(null);
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
+  const [user, setUser] = useState(() => {
+  const saved = localStorage.getItem('user');
+  return saved ? JSON.parse(saved) : null;
+  });
   
     // Fetch all tracks from backend and wire up Audio objects
   const fetchLibrary = useCallback(() => {
@@ -122,6 +125,15 @@ export default function App() {
   const openModal = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
 
+
+
+  const handleSignOut = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+    if (window.google) {
+      window.google.accounts.id.disableAutoSelect();
+    } 
+  };
 
   // Volume control
   const toggleMute = () => {
@@ -312,16 +324,30 @@ export default function App() {
           <a href="#playlists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('playlists').scrollIntoView({ behavior: 'smooth' }); }}>Playlists</a>
           <a href="#artists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('artists').scrollIntoView({ behavior: 'smooth' }); }}>Artists</a>
         </nav>
-        <button className="btn btn-signin" onClick={() => !user && openModal('signin')}>
+
+        {/* Authentication Sign in/out section */}
+        <div className="auth-section">
           {user ? (
-            <div className="user-info" onClick={() => setUser(null)}>  {/* click to sign out */}
-              <img src={user.picture} alt="avatar" className="user-avatar" />
-              <span className="user-name">{user.name}</span>
+            <div className="user-menu">
+              <div className="user-info" onClick={() => document.getElementById('user-dropdown').classList.toggle('open')}>
+                <img src={user.picture} alt="avatar" className="user-avatar" />
+                <span className="user-name">{user.name}</span>
+                <span className="dropdown-arrow">▾</span>
+              </div>
+              <div id="user-dropdown" className="user-dropdown">
+               <p className="dropdown-email">{user.email}</p>
+                <hr className="dropdown-divider" />
+                <button className="dropdown-signout" onClick={handleSignOut}>
+                 Sign Out
+                </button>
+              </div>
             </div>
           ) : (
-            'Sign In'
+            <button className="btn btn-signin" onClick={() => openModal('signin')}>
+              Sign In
+            </button>
           )}
-        </button>
+        </div>
       </header>
 
       {/* Hero Section */}
@@ -490,15 +516,16 @@ export default function App() {
 
       {activeModal === "signin" && (
         <SignInModal
-         handleGoogleSignIn={(response) => {
+          handleGoogleSignIn={(response) => {
             const payload = JSON.parse(atob(response.credential.split(".")[1]));
-            setUser({ email: payload.email, name: payload.name, picture: payload.picture });
+            const userData = { email: payload.email, name: payload.name, picture: payload.picture };
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
             closeModal();
           }}
           closeModal={closeModal}
         />
       )}
-
     {activeModal === "upload" && (
   <UploadModal
     uploadedFiles={uploadedFiles}
