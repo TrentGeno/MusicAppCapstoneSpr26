@@ -15,6 +15,7 @@ export default function App() {
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
@@ -121,6 +122,16 @@ export default function App() {
     fetchLibrary();
   }, [fetchLibrary]);
 
+  useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (!e.target.closest('.user-menu')) {
+      setDropdownOpen(false);
+    }
+  };
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []);
+
   // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
@@ -129,10 +140,11 @@ export default function App() {
 
   const handleSignOut = () => {
     setUser(null);
+    setDropdownOpen(false);
     localStorage.removeItem('user');
     if (window.google) {
       window.google.accounts.id.disableAutoSelect();
-    } 
+    }
   };
 
   // Volume control
@@ -329,18 +341,32 @@ export default function App() {
         <div className="auth-section">
           {user ? (
             <div className="user-menu">
-              <div className="user-info" onClick={() => document.getElementById('user-dropdown').classList.toggle('open')}>
+              <div className="user-info" onClick={() => setDropdownOpen(prev => !prev)}>
                 <img src={user.picture} alt="avatar" className="user-avatar" />
                 <span className="user-name">{user.name}</span>
                 <span className="dropdown-arrow">▾</span>
               </div>
-              <div id="user-dropdown" className="user-dropdown">
-               <p className="dropdown-email">{user.email}</p>
-                <hr className="dropdown-divider" />
-                <button className="dropdown-signout" onClick={handleSignOut}>
-                 Sign Out
-                </button>
-              </div>
+              {dropdownOpen && (
+                <div className="user-dropdown">
+                  <p className="dropdown-email">{user.email}</p>
+                  <hr className="dropdown-divider" />
+                  <button
+                    className="dropdown-signout"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setUser(null);
+                      setDropdownOpen(false);
+                      localStorage.removeItem('user');
+                      if (window.google) {
+                        window.google.accounts.id.disableAutoSelect();
+                      }
+                    }}
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <button className="btn btn-signin" onClick={() => openModal('signin')}>
