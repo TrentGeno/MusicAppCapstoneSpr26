@@ -1,4 +1,3 @@
-# database.py
 import os
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
@@ -25,16 +24,8 @@ def init_db(app: Flask):
     db.init_app(app)
 
     with app.app_context():
-        try:
-            db.session.execute(db.text('SELECT 1'))
-            print("✅ SQLite database connected successfully!")
-        except Exception as e:
-            print(f"❌ Database connection failed: {e}")
-            raise
-        
         db.create_all()
 
-        # Create dummy user inside the same app context
         from models import User
         existing = db.session.get(User, 1)
         if not existing:
@@ -48,22 +39,36 @@ def init_db(app: Flask):
             print("✅ Dummy user created (user_id=1)")
         else:
             print("ℹ️ Dummy user already exists")
-            
-            
+
+
+# ✅ FIXED: Proper SQLAlchemy version
 def find_or_create_user(email, name, picture):
-    # Check if user already exists
-    user = db.execute(
-        "SELECT * FROM users WHERE email = ?", (email,)
-    ).fetchone()
-    
+    from models import User
+
+    user = User.query.filter_by(email=email).first()
+
     if user:
-        return {"id": user["id"], "email": user["email"], "name": user["name"]}
-    
-    # Create new user if they don't exist
-    db.execute(
-        "INSERT INTO users (email, name, picture) VALUES (?, ?, ?)",
-        (email, name, picture)
+        return {
+            "user_id": user.user_id,
+            "email": user.email,
+            "username": user.username,
+            "profile_picture": user.profile_picture
+        }
+
+    new_user = User(
+        username=name or email,
+        email=email,
+        password_hash="google_oauth",
+        profile_picture=picture,
+        oauth_provider="google"
     )
-    db.commit()
-    
-    return {"email": email, "name": name, "picture": picture}
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return {
+        "user_id": new_user.user_id,
+        "email": new_user.email,
+        "username": new_user.username,
+        "profile_picture": new_user.profile_picture
+    }

@@ -1238,6 +1238,28 @@ nav a:hover::after {
   cursor: pointer;
 }
 
+.auth-section {
+  position: relative;
+}
+
+.user-menu {
+  position: relative;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .user-avatar {
   width: 32px;
   height: 32px;
@@ -1251,4 +1273,57 @@ nav a:hover::after {
   font-size: 14px;
   font-weight: 500;
 >>>>>>> c80e5256e9b5679608157d4eae9b962f990012a4
+}
+
+.dropdown-arrow {
+  color: #888;
+  font-size: 12px;
+}
+
+.user-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1e2030;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 1000;
+}
+
+.user-dropdown.open {
+  display: block;
+}
+
+.dropdown-email {
+  color: #888;
+  font-size: 13px;
+  margin: 0 0 8px;
+  padding: 0 4px;
+}
+
+.dropdown-divider {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin: 8px 0;
+}
+
+.dropdown-signout {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #f87171;
+  font-size: 14px;
+  text-align: left;
+  padding: 6px 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.dropdown-signout:hover {
+  background: rgba(248, 113, 113, 0.1);
 }
