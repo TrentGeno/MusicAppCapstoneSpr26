@@ -328,7 +328,7 @@ def upload():
             duration=duration,
             bitrate=bitrate,
             year=year,
-            cover_art_path=None  # Will be set after fetching
+            cover_art_path=None,  # Will be set after fetching
             user_id=1  # replace later with logged-in user
         )
         db.session.add(track)
