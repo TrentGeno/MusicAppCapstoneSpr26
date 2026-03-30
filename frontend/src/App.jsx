@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
-import { Link } from 'react-router-dom';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
-
-import Playlist from './Playlist';
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import HomePage from './components/Homepage';
+import Playlist from './Playlists';
+import PlaylistsPage from './components/PlaylistsPage';
 import Soundbar from './components/Soundbar';
-import PlaylistModal from './components/modals/PlaylistModal';
 import SignInModal from './components/modals/SignInModal';
 import UploadModal from './components/modals/UploadModal';
+import PlaylistModal from './components/modals/PlaylistModal';
 
 export default function App() {
   // State management
@@ -22,7 +22,6 @@ export default function App() {
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
-  const [showPlaylistPage, setShowPlaylistPage] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
   const [user, setUser] = useState(() => {
   const saved = localStorage.getItem('user');
@@ -322,217 +321,19 @@ export default function App() {
   
   return (
     <div className="container">
-      {/* Header */}
-      <header className="header">
-        <div className="logo">OffBeat</div>
-        <nav className="nav">
-        {/* <a className="nav-link" href="/library">Library</a>  */}
-        <Link className="nav-link" to="/playlist">Playlists</Link>
-        {/* <a className="nav-link" href="/Artists">Artists</a> */}
-        </nav>
+      <Navbar
+      user={user}
+      onSignIn={() => openModal('signin')}
+      onSignOut={handleSignOut}
+      />
 
-        {/* Authentication Sign in/out section */}
-        <div className="auth-section">
-          {user ? (
-            <div className="user-menu">
-              <div className="user-info" onClick={() => document.getElementById('user-dropdown').classList.toggle('open')}>
-                <img src={user.picture} alt="avatar" className="user-avatar" />
-                <span className="user-name">{user.name}</span>
-                <span className="dropdown-arrow">▾</span>
-              </div>
-              <div id="user-dropdown" className="user-dropdown">
-               <p className="dropdown-email">{user.email}</p>
-                <hr className="dropdown-divider" />
-                <button className="dropdown-signout" onClick={handleSignOut}>
-                 Sign Out
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button className="btn btn-signin" onClick={() => openModal('signin')}>
-              Sign In
-            </button>
-          )}
-        </div>
-      </header>
-
-      {showPlaylistPage && (
-  <div style={{
-    position: "fixed",
-    inset: 0,
-    background: "#0a0a0f",
-    zIndex: 9999,
-    overflowY: "auto"
-  }}>
-    <div classname="playlist-topbar">
-      <button
-        className="btn btn-secondary"
-        onClick={() => setShowPlaylistPage(false)}
-      >
-        ← Back
-      </button>
-    </div>
-
-    <Playlist />
-  </div>
-)}
-
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <div className="hero-text">
-            <h1>Your Personal Music Library</h1>
-            <p className="hero-paragraph">
-              Upload your downloaded music collection and organize it beautifully. 
-              Create playlists, manage your library, and enjoy your favorite tracks offline.
-            </p>
-            <div className="cta-buttons">
-              <button className="btn btn-primary" onClick={() => openModal('upload')}>
-                Upload Music
-              </button>
-              <button className="btn btn-secondary" onClick={() => openModal('playlist')}>
-                Create Playlist
-              </button>
-            </div>
-          </div>
-          <div className="hero-visual">
-            <div className="vinyl-container">
-              <div className="vinyl"></div>
-              <div className="album-art">🎵</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Library Section */}
-      <section id="library" className="section">
-        <div className="section-header">
-          <h2>Your Library</h2>
-          <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('upload'); }}>
-            Add Songs →
-          </a>
-        </div>
-        <div className="music-grid">
-          {library.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📁</div>
-              <h3>Your library is empty</h3>
-              <p className="empty-text">Upload your music files to get started</p>
-              <button className="btn btn-primary" onClick={() => openModal('upload')}>
-                Upload Now
-              </button>
-            </div>
-          ) : (
-            library.map(song => (
-              <div key={song.id} className="music-card">
-                <div className="card-cover" style={{ background: song.gradient }}>
-                  {song.cover ? (
-                    <img src={song.cover} alt="cover" className="cover-img" />
-                  ) : (
-                    <span className="cover-initial">
-                      {song.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="card-info">
-                  <h3 className="card-title">{song.name}</h3>
-                  <p className="card-artist">{song.artist}</p>
-                </div>
-                <div className="card-meta">
-                  <button 
-                    className="play-btn" 
-                    onClick={(e) => { e.stopPropagation(); togglePlay(song.id); }}
-                  >
-                    {song.isPlaying ? '⏸' : '▶'}
-                  </button>
-
-                  {song.isPlaying && (
-                    <>
-                      <div className="player-controls">
-                        <div className="time-group">
-                          <span className="elapsed">{song.currentTime}</span>
-                          <span className="time-separator">/</span>
-                          <span className="duration">{song.duration}</span>
-                        </div>
-                        <button 
-                          className={`repeat-btn repeat-${song.repeatMode}`}
-                          onClick={(e) => { e.stopPropagation(); toggleRepeat(song.id); }}
-                          title={`Repeat: ${song.repeatMode}`}
-                        >
-                          ↻
-                          {song.repeatMode === 'one' && <span className="repeat-badge">1</span>}
-                        </button>
-                      </div>
-                      <div
-                        className="progress-bar"
-                        onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const x = e.clientX - rect.left;
-                          const pct = (x / rect.width) * 100;
-                          seek(song.id, pct);
-                        }}
-                      >
-                        <div
-                          className="progress-filled"
-                          style={{ width: `${song.progress}%` }}
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Playlists Section */}
-      <section id="playlists" className="section">
-        <div className="section-header">
-          <h2>Your Playlists</h2>
-          <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('playlist'); }}>
-            Create Playlist →
-          </a>
-        </div>
-        <div className="music-grid">
-          {playlists.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📁</div>
-              <h3>No playlists yet</h3>
-              <p className="empty-text">Create your first playlist to organize your music</p>
-              <button className="btn btn-primary" onClick={() => openModal('playlist')}>
-                Create Playlist
-              </button>
-            </div>
-          ) : (
-            playlists.map(playlist => (
-              <div key={playlist.id} className="music-card">
-                <div className="card-cover" style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
-                  <span className="cover-initial">📋</span>
-                </div>
-                <div className="card-info">
-                  <h3 className="card-title">{playlist.name}</h3>
-                  <p className="card-artist">{playlist.songCount} songs</p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Artists Section */}
-      <section id="artists" className="section">
-        <div className="section-header">
-          <h2>Artists</h2>
-        </div>
-        <div className="music-grid">
-          <div className="empty-state">
-            <div className="empty-icon">🎤</div>
-            <h3>Artists section</h3>
-            <p className="empty-text">Artist browsing coming soon</p>
-          </div>
-        </div>
-      </section>
+      <Routes>
+      <Route path="/" element={<HomePage openModal={openModal}library={library}togglePlay={togglePlay}/>} />
+      <Route path="/library" element={<div style={{padding: '2rem'}}>Library coming soon</div>} />
+      <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
+      <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
+      <Route path="/playlists/:id" element={<Playlist />} />
+    </Routes>
      {activeModal === "playlist" && (
     <PlaylistModal
     playlistData={playlistData}
@@ -580,9 +381,6 @@ export default function App() {
         currentSongId={currentSongId}
       />
     )}
-      <Routes>
-        <Route path="/playlist" element={<Playlist />} />
-      </Routes>
     </div>
   );
 }
