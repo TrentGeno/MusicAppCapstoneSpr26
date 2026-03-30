@@ -1,8 +1,11 @@
 import os
+import uuid
 from flask import Flask, request, send_from_directory, jsonify
-from database import db, init_db
-from models import User, Track
+from database import db, init_db, find_or_create_user
+from models import User, Track, Playlist
 from flask_cors import CORS
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 import mutagen
 from mutagen.mp3 import MP3
 from mutagen.flac import FLAC
@@ -200,6 +203,30 @@ def save_cover_art(cover_data, artist, album):
         print(f"Error saving cover art: {e}")
         return None
 
+GOOGLE_CLIENT_ID = "YOUR_CLIENT_ID_HERE"
+
+@app.route("/api/auth/google", methods=["POST"])
+def google_signin():
+    token = request.json.get("token")
+
+    try:
+        payload = id_token.verify_oauth2_token(
+            token,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID
+        )
+
+        email = payload["email"]
+        name = payload.get("name")
+        picture = payload.get("picture")
+
+        user = find_or_create_user(email, name, picture)
+
+        return jsonify({"user": user})
+
+    except ValueError:
+        return jsonify({"error": "Invalid token"}), 401
+
 
 @app.route('/test-db')
 def test_db():
@@ -210,20 +237,17 @@ def test_db():
         return {'status': 'error', 'message': str(e)}, 500
 
 
-@app.route("/home")
-def hello():
-    return jsonify({"message": "Homepage Template"})
-
-
 @app.route("/upload", methods=["POST"])
 def upload():
     if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
+
     file = request.files["file"]
     if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
 
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
+    unique_name = f"{uuid.uuid4()}_{file.filename}"
+    filepath = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
 
     # Check if this file already exists in the database
     existing_track = Track.query.filter_by(file_path=filepath).first()
@@ -294,10 +318,6 @@ def upload():
         bitrate = metadata['bitrate'] if metadata and metadata['bitrate'] else None
         year = metadata['year'] if metadata and metadata['year'] else None
 
-        dummy_user = db.session.get(User, 1)
-        if not dummy_user:
-            return jsonify({"error": "Dummy user not found"}), 500
-
         # Create track record
         track = Track(
             file_path=filepath,
@@ -309,6 +329,7 @@ def upload():
             bitrate=bitrate,
             year=year,
             cover_art_path=None  # Will be set after fetching
+            user_id=1  # replace later with logged-in user
         )
         db.session.add(track)
         db.session.commit()
@@ -336,9 +357,9 @@ def upload():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": f"Failed to save track in DB: {e}"}), 500
+        return jsonify({"error": str(e)}), 500
 
-    return jsonify({"filename": file.filename})
+    return jsonify({"filename": unique_name})
 
 
 @app.route("/music/<filename>")
@@ -355,7 +376,7 @@ def serve_cover(filename):
 
 @app.route("/tracks", methods=["GET"])
 def get_tracks():
-    tracks = Track.query.all()
+    tracks = Track.query.filter_by(user_id=1).all()
     # Filter tracks to only include those whose files actually exist
     # and remove duplicates based on file path
     valid_tracks = []
@@ -412,6 +433,78 @@ def get_tracks():
             db.session.commit()
         # If file exists but path already seen, this is a duplicate - skip it
     return jsonify(valid_tracks), 200
+    tracks = Track.query.filter_by(user_id=1).all()
+
+    return jsonify([
+        {
+            "track_id": t.track_id,
+            "title": t.title,
+            "filename": os.path.basename(t.file_path),
+            "artist": t.artist,
+            "album": t.album,
+            "genre": t.genre
+        }
+        for t in tracks
+    ])
+
+@app.route("/playlist", methods=["POST"])
+def create_playlist():
+    data = request.get_json()
+
+    if not data or "name" not in data:
+        return jsonify({"error": "Invalid request"}), 400
+
+    try:
+        playlist = Playlist(
+            name=data["name"],
+            description=data.get("description"),
+            user_id=1
+        )
+
+        db.session.add(playlist)
+        db.session.commit()
+
+        return jsonify({
+            "playlist_id": playlist.playlist_id,
+            "name": playlist.name
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/playlists", methods=["GET"])
+def get_playlists():
+    playlists = Playlist.query.filter_by(user_id=1).all()
+
+    return jsonify([
+        {
+            "playlist_id": p.playlist_id,
+            "name": p.name,
+            "description": p.description,
+            "track_count": len(p.tracks)
+        }
+        for p in playlists
+    ])
+
+@app.route("/playlist/<int:playlist_id>/add-track", methods=["POST"])
+def add_track_to_playlist(playlist_id):
+    data = request.get_json()
+    track_id = data.get("track_id")
+
+    playlist = db.session.get(Playlist, playlist_id)
+    track = db.session.get(Track, track_id)
+
+    if not playlist or not track:
+        return jsonify({"error": "Playlist or Track not found"}), 404
+
+    if track not in playlist.tracks:
+        playlist.tracks.append(track)
+
+    db.session.commit()
+
+    return jsonify({"message": "Track added to playlist"})
 
 if __name__ == "__main__":
     app.run(debug=True)
