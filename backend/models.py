@@ -29,6 +29,10 @@ class Track(db.Model):
     artist = db.Column(db.String(200))
     album = db.Column(db.String(200))
     genre = db.Column(db.String(100))
+    duration = db.Column(db.Integer)
+    bitrate = db.Column(db.Integer)
+    year = db.Column(db.String(20))
+    cover_art_path = db.Column(db.String(500))
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
 
