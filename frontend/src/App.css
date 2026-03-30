@@ -1199,7 +1199,6 @@ nav a:hover::after {
   opacity: 0.7;
 }
 
-<<<<<<< HEAD
 /* Top bar wrapper */
 .playlist-topbar {
   height: 72px;
@@ -1207,7 +1206,7 @@ nav a:hover::after {
   align-items: center;
   padding: 0 48px;
   background: #0a0a0f;
-=======
+}
 .google-signin-wrapper {
   display: flex;
   justify-content: center;
@@ -1272,7 +1271,6 @@ nav a:hover::after {
   color: #fff;
   font-size: 14px;
   font-weight: 500;
->>>>>>> c80e5256e9b5679608157d4eae9b962f990012a4
 }
 
 .dropdown-arrow {
