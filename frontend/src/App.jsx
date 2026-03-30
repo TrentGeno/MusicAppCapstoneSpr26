@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
+import { Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+
 import Playlist from './Playlist';
 import Soundbar from './components/Soundbar';
 import PlaylistModal from './components/modals/PlaylistModal';
@@ -310,9 +314,9 @@ export default function App() {
       <header className="header">
         <div className="logo">OffBeat</div>
         <nav className="nav">
-        <button className="nav-link" onClick={() => setRoute('home')} onClick={(e) => { e.preventDefault(); document.getElementById('library').scrollIntoView({ behavior: 'smooth' }); }}>Library</button>
-        <button className="nav-link" onClick={() => setShowPlaylistPage(true)} onClick={(e) => { e.preventDefault(); document.getElementById('playlists').scrollIntoView({ behavior: 'smooth' }); }}>Playlists</button>
-        <button className="nav-link" onClick={() => setRoute('artists')} onClick={(e) => { e.preventDefault(); document.getElementById('artists').scrollIntoView({ behavior: 'smooth' }); }}>Artists</button>
+        {/* <a className="nav-link" href="/library">Library</a>  */}
+        <Link className="nav-link" to="/playlist">Playlists</Link>
+        {/* <a className="nav-link" href="/Artists">Artists</a> */}
         </nav>
         <button className="btn btn-signin" onClick={() => !user && openModal('signin')}>
           {user ? (
@@ -549,7 +553,9 @@ export default function App() {
         currentSongId={currentSongId}
       />
     )}
-
+      <Routes>
+        <Route path="/playlist" element={<Playlist />} />
+      </Routes>
     </div>
   );
 }

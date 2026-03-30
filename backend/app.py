@@ -1,5 +1,6 @@
 import os
 from flask import Flask, request, send_from_directory, jsonify
+from flask_cors import CORS
 from database import db, init_db
 from models import User, Track
 from flask_cors import CORS
@@ -9,11 +10,12 @@ from database import find_or_create_user
 
 app = Flask(__name__)
 init_db(app)
-CORS(app)
+CORS(app, origins=["http://localhost:5000", "http://localhost:5173"])
 
 UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
 
 
 
