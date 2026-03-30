@@ -12,13 +12,16 @@ export default function App() {
   const [library, setLibrary] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
-  const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
+  const [user, setUser] = useState(() => {
+  const saved = localStorage.getItem('user');
+  return saved ? JSON.parse(saved) : null;
+  });
   
     // Fetch all tracks from backend and wire up Audio objects
   const fetchLibrary = useCallback(() => {
@@ -122,23 +125,14 @@ export default function App() {
   const openModal = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
 
-  // Sign In Handler
-  const handleSignIn = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('http://localhost:5000/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signInData)
-      });
-      const data = await response.json();
-      console.log('Sign in response:', data);
-      closeModal();
-      setSignInData({ email: '', password: '' });
-    } catch (error) {
-      console.error('Sign in error:', error);
-      alert('Sign in failed. Please check your credentials.');
-    }
+
+
+  const handleSignOut = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+    if (window.google) {
+      window.google.accounts.id.disableAutoSelect();
+    } 
   };
 
   // Volume control
@@ -347,9 +341,30 @@ export default function App() {
           <a href="#playlists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('playlists').scrollIntoView({ behavior: 'smooth' }); }}>Playlists</a>
           <a href="#artists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('artists').scrollIntoView({ behavior: 'smooth' }); }}>Artists</a>
         </nav>
-        <button className="btn btn-signin" onClick={() => openModal('signin')}>
-          Sign In
-        </button>
+
+        {/* Authentication Sign in/out section */}
+        <div className="auth-section">
+          {user ? (
+            <div className="user-menu">
+              <div className="user-info" onClick={() => document.getElementById('user-dropdown').classList.toggle('open')}>
+                <img src={user.picture} alt="avatar" className="user-avatar" />
+                <span className="user-name">{user.name}</span>
+                <span className="dropdown-arrow">▾</span>
+              </div>
+              <div id="user-dropdown" className="user-dropdown">
+               <p className="dropdown-email">{user.email}</p>
+                <hr className="dropdown-divider" />
+                <button className="dropdown-signout" onClick={handleSignOut}>
+                 Sign Out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button className="btn btn-signin" onClick={() => openModal('signin')}>
+              Sign In
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Hero Section */}
@@ -517,13 +532,17 @@ export default function App() {
     />)}
 
       {activeModal === "signin" && (
-  <SignInModal
-    signInData={signInData}
-    setSignInData={setSignInData}
-    handleSignIn={handleSignIn}
-    closeModal={closeModal}
-    />)}
-
+        <SignInModal
+          handleGoogleSignIn={(response) => {
+            const payload = JSON.parse(atob(response.credential.split(".")[1]));
+            const userData = { email: payload.email, name: payload.name, picture: payload.picture };
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+            closeModal();
+          }}
+          closeModal={closeModal}
+        />
+      )}
     {activeModal === "upload" && (
   <UploadModal
     uploadedFiles={uploadedFiles}
