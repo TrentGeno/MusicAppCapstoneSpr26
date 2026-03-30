@@ -4,7 +4,7 @@ export default function HomePage({ openModal, library, togglePlay }) {
   const navigate = useNavigate();
 
   return (
-    <>
+    <div className="container">
       {/* Hero */}
       <section className="hero">
         <div className="hero-content">
@@ -71,6 +71,6 @@ export default function HomePage({ openModal, library, togglePlay }) {
           )}
         </div>
       </section>
-    </>
+    </div>
   );
 }

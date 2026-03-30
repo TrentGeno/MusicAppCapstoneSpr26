@@ -4,6 +4,7 @@ export default function PlaylistsPage({ playlists, openModal }) {
   const navigate = useNavigate();
 
   return (
+    <div className="container">
     <section id="playlists" className="section">
       <div className="section-header">
         <h2>Your Playlists</h2>
@@ -44,5 +45,6 @@ export default function PlaylistsPage({ playlists, openModal }) {
         )}
       </div>
     </section>
+    </div>
   );
 }
