@@ -127,6 +127,13 @@ nav a:hover::after {
     border-color: var(--accent-purple);
 }
 
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-dark);
+}
+
 /* Hero Section */
 .hero {
     padding: 4rem 0 6rem;

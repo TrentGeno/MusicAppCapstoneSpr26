@@ -320,12 +320,10 @@ export default function App() {
 };
   
   return (
-    <div className="container">
-      <Navbar
-      user={user}
-      onSignIn={() => openModal('signin')}
-      onSignOut={handleSignOut}
-      />
+    <div>
+
+      <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut}/>
+
 
       <Routes>
       <Route path="/" element={<HomePage openModal={openModal}library={library}togglePlay={togglePlay}/>} />
@@ -333,7 +331,8 @@ export default function App() {
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
       <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
       <Route path="/playlists/:id" element={<Playlist />} />
-    </Routes>
+      </Routes>
+
      {activeModal === "playlist" && (
     <PlaylistModal
     playlistData={playlistData}
@@ -355,7 +354,7 @@ export default function App() {
         />
       )}
     {activeModal === "upload" && (
-  <UploadModal
+    <UploadModal
     uploadedFiles={uploadedFiles}
     handleFiles={handleFiles}
     removeFile={removeFile}
@@ -365,7 +364,7 @@ export default function App() {
     handleDragOver={handleDragOver}
     handleDragLeave={handleDragLeave}
     handleDrop={handleDrop}
-  />)}
+    />)}
 
     {/* Soundbar - only visible when there's a current song */}
     {currentSongId && (
