@@ -14,6 +14,8 @@ import PlaylistModal from './components/modals/PlaylistModal';
 export default function App() {
   // State management
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
   const [library, setLibrary] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
@@ -189,13 +191,32 @@ export default function App() {
   };
 
   // File handling
+  const getFileKey = (file) => `${file.name}-${file.size}-${file.lastModified}`;
+
   const handleFiles = (files) => {
     const fileArray = Array.from(files).filter(file => file.type.startsWith('audio/'));
-    setUploadedFiles(fileArray);
+    setUploadedFiles(prev => {
+      const existingKeys = new Set(prev.map(getFileKey));
+      const newFiles = fileArray.filter(file => !existingKeys.has(getFileKey(file)));
+      if (newFiles.length < fileArray.length) {
+        // Duplicate items are ignored
+        console.warn('Skipped duplicate upload candidates');
+      }
+      return [...prev, ...newFiles];
+    });
   };
 
   const removeFile = (index) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadedFiles(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      setUploadProgress(prevProg => {
+        const key = getFileKey(prev[index]);
+        const nextProg = { ...prevProg };
+        delete nextProg[key];
+        return nextProg;
+      });
+      return next;
+    });
   };
 
   
@@ -216,6 +237,57 @@ export default function App() {
     handleFiles(e.dataTransfer.files);
   };
 
+  const uploadSingleFile = (file) => {
+    const fileKey = getFileKey(file);
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', 'http://localhost:5000/upload');
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(prev => ({ ...prev, [fileKey]: percent }));
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadProgress(prev => ({ ...prev, [fileKey]: 100 }));
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          reject(new Error(`Upload failed for ${file.name}: ${xhr.status} ${xhr.statusText}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error(`Upload network error for ${file.name}`));
+
+      const formData = new FormData();
+      formData.append('file', file);
+      xhr.send(formData);
+    });
+  };
+
+  const handleUpload = async () => {
+    if (uploadedFiles.length === 0 || isUploading) return;
+
+    setIsUploading(true);
+
+    try {
+      for (const file of uploadedFiles) {
+        await uploadSingleFile(file);
+      }
+
+      await fetchLibrary();
+      setUploadedFiles([]);
+      setUploadProgress({});
+      closeModal();
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload failed. Check console for details.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
 
   // Toggle play/pause and ensure only one track plays at a time
@@ -296,45 +368,7 @@ export default function App() {
     }
   };
 
-  const handleUpload = async () => {
-  if (uploadedFiles.length === 0) return;
 
-  const formData = new FormData();
-  uploadedFiles.forEach(file => formData.append('file', file));
-
-  try {
-    const response = await fetch('http://localhost:5000/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (response.status === 409) {
-      // File already exists
-      const data = await response.json();
-      alert(`File "${data.filename}" is already in your library.`);
-      return;
-    }
-
-    if (!response.ok) throw new Error('Upload failed');
-
-    const data = await response.json();
-
-    // Check if this was a re-processing or new upload
-    if (data.message && (data.message.includes('already exists') || data.message.includes('re-processed'))) {
-      // File was re-processed or already existed - refresh library to show any updates
-      fetchLibrary();
-    } else {
-      // New file uploaded - refresh library
-      fetchLibrary();
-    }
-
-    setUploadedFiles([]);
-    closeModal();
-  } catch (error) {
-    console.error('Upload error:', error);
-    alert('Server error: Make sure your Flask backend is running on port 5000');
-  }
-};
   
   return (
     <div>
@@ -372,15 +406,17 @@ export default function App() {
       )}
     {activeModal === "upload" && (
     <UploadModal
-    uploadedFiles={uploadedFiles}
-    handleFiles={handleFiles}
-    removeFile={removeFile}
-    handleUpload={handleUpload}
-    closeModal={closeModal}
-    isDragging={isDragging}
-    handleDragOver={handleDragOver}
-    handleDragLeave={handleDragLeave}
-    handleDrop={handleDrop}
+      uploadedFiles={uploadedFiles}
+      handleFiles={handleFiles}
+      removeFile={removeFile}
+      handleUpload={handleUpload}
+      closeModal={closeModal}
+      isDragging={isDragging}
+      handleDragOver={handleDragOver}
+      handleDragLeave={handleDragLeave}
+      handleDrop={handleDrop}
+      uploadProgress={uploadProgress}
+      isUploading={isUploading}
     />)}
 
     {/* Soundbar - only visible when there's a current song */}
