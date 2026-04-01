@@ -55,22 +55,23 @@ body::before {
 
 /* Header */
 header {
-    padding: 2rem 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    opacity: 0;
-    animation: fadeInDown 0.8s ease forwards 0.2s;
+  padding: 1rem 0;  /* change from 2rem 0 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  opacity: 0;
+  animation: fadeInDown 0.8s ease forwards 0.2s;
 }
 
 .logo {
-    font-family: 'Italiana', serif;
-    font-size: 2rem;
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: 2px;
+  font-family: 'Italiana', serif;
+  font-size: 2rem;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 2px;
+  padding-left: 1.5rem;  /* add this line */
 }
 
 nav {
@@ -81,13 +82,13 @@ nav {
 }
 
 nav a {
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-weight: 300;
-    font-size: 0.95rem;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    position: relative;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 300;
+  font-size: 1.1rem;  /* change from 0.95rem */
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
 nav a::after {
