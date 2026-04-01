@@ -362,7 +362,7 @@ export default function App() {
         <SignInModal
           handleGoogleSignIn={(response) => {
             const payload = JSON.parse(atob(response.credential.split(".")[1]));
-            const userData = { email: payload.email, name: payload.name, picture: payload.picture };
+            const userData = { email: payload.email, name: payload.name, photoURL: payload.picture };
             setUser(userData);
             localStorage.setItem('user', JSON.stringify(userData));
             closeModal();

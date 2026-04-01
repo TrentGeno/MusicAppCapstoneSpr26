@@ -13,7 +13,12 @@ export default function Navbar({ user, onSignIn, onSignOut }) {
         {user ? (
           <div className="user-menu">
             <div className="user-info" onClick={() => document.getElementById('user-dropdown').classList.toggle('open')}>
-              <img src={user.picture} alt="avatar" className="user-avatar" />
+              <img
+                src={user.photoURL}
+                alt="user-avatar"
+                referrerPolicy="no-referrer"
+                className = "user-avatar"
+              />
               <span className="user-name">{user.name}</span>
               <span className="dropdown-arrow">▾</span>
             </div>
