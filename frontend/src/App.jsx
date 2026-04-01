@@ -177,12 +177,18 @@ export default function App() {
   };
 
   const replaySong = () => {
-    const song = library.find(s => s.id === currentSongId);
-    if (song) {
-      song.audio.currentTime = 0;
-      if (!song.isPlaying) togglePlay(song.id);
-    }
-  };
+  const song = library.find(s => s.id === currentSongId);
+  const index = library.findIndex(s => s.id === currentSongId);
+
+  if (song && song.audio.currentTime > 10) {
+    // More than 10 seconds in — restart the current song
+    song.audio.currentTime = 0;
+  } else {
+    // Within first 10 seconds — go to previous song
+    const prevIndex = (index - 1 + library.length) % library.length;
+    if (library[prevIndex]) togglePlay(library[prevIndex].id);
+  }
+};
 
   const handleSoundbarPlay = () => {
     if (currentSongId) {
