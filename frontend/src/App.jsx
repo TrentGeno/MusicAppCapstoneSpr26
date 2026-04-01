@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import HomePage from './components/Homepage';
+import Playlist from './Playlists';
+import PlaylistsPage from './components/PlaylistsPage';
 import Soundbar from './components/Soundbar';
-import PlaylistModal from './components/modals/PlaylistModal';
 import SignInModal from './components/modals/SignInModal';
 import UploadModal from './components/modals/UploadModal';
+import PlaylistModal from './components/modals/PlaylistModal';
 
 export default function App() {
   // State management
@@ -51,7 +56,7 @@ export default function App() {
             duration: '--:--',
             currentTime: '0:00',
             progress: 0,
-            cover: null,
+            cover: track.cover_art_url,  // Use cover art from backend
             repeatMode: 'none',
           };
 
@@ -315,9 +320,26 @@ export default function App() {
       body: formData,
     });
 
+    if (response.status === 409) {
+      // File already exists
+      const data = await response.json();
+      alert(`File "${data.filename}" is already in your library.`);
+      return;
+    }
+
     if (!response.ok) throw new Error('Upload failed');
 
-    fetchLibrary();
+    const data = await response.json();
+
+    // Check if this was a re-processing or new upload
+    if (data.message && (data.message.includes('already exists') || data.message.includes('re-processed'))) {
+      // File was re-processed or already existed - refresh library to show any updates
+      fetchLibrary();
+    } else {
+      // New file uploaded - refresh library
+      fetchLibrary();
+    }
+
     setUploadedFiles([]);
     closeModal();
   } catch (error) {
@@ -327,224 +349,32 @@ export default function App() {
 };
   
   return (
-    <div className="container">
-      {/* Header */}
-      <header className="header">
-        <div className="logo">OffBeat</div>
-        <nav className="nav">
-          <a href="#library" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('library').scrollIntoView({ behavior: 'smooth' }); }}>Library</a>
-          <a href="#playlists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('playlists').scrollIntoView({ behavior: 'smooth' }); }}>Playlists</a>
-          <a href="#artists" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('artists').scrollIntoView({ behavior: 'smooth' }); }}>Artists</a>
-        </nav>
+    <div>
 
-        {/* Authentication Sign in/out section */}
-        <div className="auth-section">
-          {user ? (
-            <div className="user-menu">
-              <div className="user-info" onClick={() => setDropdownOpen(prev => !prev)}>
-                <img src={user.picture} alt="avatar" className="user-avatar" />
-                <span className="user-name">{user.name}</span>
-                <span className="dropdown-arrow">▾</span>
-              </div>
-              {dropdownOpen && (
-                <div className="user-dropdown">
-                  <p className="dropdown-email">{user.email}</p>
-                  <hr className="dropdown-divider" />
-                  <button
-                    className="dropdown-signout"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setUser(null);
-                      setDropdownOpen(false);
-                      localStorage.removeItem('user');
-                      if (window.google) {
-                        window.google.accounts.id.disableAutoSelect();
-                      }
-                    }}
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button className="btn btn-signin" onClick={() => openModal('signin')}>
-              Sign In
-            </button>
-          )}
-        </div>
-      </header>
+      <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut}/>
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <div className="hero-text">
-            <h1>Your Personal Music Library</h1>
-            <p className="hero-paragraph">
-              Upload your downloaded music collection and organize it beautifully. 
-              Create playlists, manage your library, and enjoy your favorite tracks offline.
-            </p>
-            <div className="cta-buttons">
-              <button className="btn btn-primary" onClick={() => openModal('upload')}>
-                Upload Music
-              </button>
-              <button className="btn btn-secondary" onClick={() => openModal('playlist')}>
-                Create Playlist
-              </button>
-            </div>
-          </div>
-          <div className="hero-visual">
-            <div className="vinyl-container">
-              <div className="vinyl"></div>
-              <div className="album-art">🎵</div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Library Section */}
-      <section id="library" className="section">
-        <div className="section-header">
-          <h2>Your Library</h2>
-          <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('upload'); }}>
-            Add Songs →
-          </a>
-        </div>
-        <div className="music-grid">
-          {library.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📁</div>
-              <h3>Your library is empty</h3>
-              <p className="empty-text">Upload your music files to get started</p>
-              <button className="btn btn-primary" onClick={() => openModal('upload')}>
-                Upload Now
-              </button>
-            </div>
-          ) : (
-            library.map(song => (
-              <div key={song.id} className="music-card">
-                <div className="card-cover" style={{ background: song.gradient }}>
-                  {song.cover ? (
-                    <img src={song.cover} alt="cover" className="cover-img" />
-                  ) : (
-                    <span className="cover-initial">
-                      {song.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="card-info">
-                  <h3 className="card-title">{song.name}</h3>
-                  <p className="card-artist">{song.artist}</p>
-                </div>
-                <div className="card-meta">
-                  <button 
-                    className="play-btn" 
-                    onClick={(e) => { e.stopPropagation(); togglePlay(song.id); }}
-                  >
-                    {song.isPlaying ? '⏸' : '▶'}
-                  </button>
+      <Routes>
+      <Route path="/" element={<HomePage openModal={openModal}library={library}togglePlay={togglePlay}/>} />
+      <Route path="/library" element={<div style={{padding: '2rem'}}>Library coming soon</div>} />
+      <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
+      <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
+      <Route path="/playlists/:id" element={<Playlist />} />
+      </Routes>
 
-                  {song.isPlaying && (
-                    <>
-                      <div className="player-controls">
-                        <div className="time-group">
-                          <span className="elapsed">{song.currentTime}</span>
-                          <span className="time-separator">/</span>
-                          <span className="duration">{song.duration}</span>
-                        </div>
-                        <button 
-                          className={`repeat-btn repeat-${song.repeatMode}`}
-                          onClick={(e) => { e.stopPropagation(); toggleRepeat(song.id); }}
-                          title={`Repeat: ${song.repeatMode}`}
-                        >
-                          ↻
-                          {song.repeatMode === 'one' && <span className="repeat-badge">1</span>}
-                        </button>
-                      </div>
-                      <div
-                        className="progress-bar"
-                        onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const x = e.clientX - rect.left;
-                          const pct = (x / rect.width) * 100;
-                          seek(song.id, pct);
-                        }}
-                      >
-                        <div
-                          className="progress-filled"
-                          style={{ width: `${song.progress}%` }}
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Playlists Section */}
-      <section id="playlists" className="section">
-        <div className="section-header">
-          <h2>Your Playlists</h2>
-          <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('playlist'); }}>
-            Create Playlist →
-          </a>
-        </div>
-        <div className="music-grid">
-          {playlists.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📁</div>
-              <h3>No playlists yet</h3>
-              <p className="empty-text">Create your first playlist to organize your music</p>
-              <button className="btn btn-primary" onClick={() => openModal('playlist')}>
-                Create Playlist
-              </button>
-            </div>
-          ) : (
-            playlists.map(playlist => (
-              <div key={playlist.id} className="music-card">
-                <div className="card-cover" style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
-                  <span className="cover-initial">📋</span>
-                </div>
-                <div className="card-info">
-                  <h3 className="card-title">{playlist.name}</h3>
-                  <p className="card-artist">{playlist.songCount} songs</p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Artists Section */}
-      <section id="artists" className="section">
-        <div className="section-header">
-          <h2>Artists</h2>
-        </div>
-        <div className="music-grid">
-          <div className="empty-state">
-            <div className="empty-icon">🎤</div>
-            <h3>Artists section</h3>
-            <p className="empty-text">Artist browsing coming soon</p>
-          </div>
-        </div>
-      </section>
      {activeModal === "playlist" && (
-    <PlaylistModal
-    playlistData={playlistData}
-    setPlaylistData={setPlaylistData}
-    handleCreatePlaylist={handleCreatePlaylist}
-    closeModal={closeModal}
-    />)}
+      <PlaylistModal
+      playlistData={playlistData}
+      setPlaylistData={setPlaylistData}
+      handleCreatePlaylist={handleCreatePlaylist}
+      closeModal={closeModal}
+      />)}
 
       {activeModal === "signin" && (
         <SignInModal
           handleGoogleSignIn={(response) => {
             const payload = JSON.parse(atob(response.credential.split(".")[1]));
-            const userData = { email: payload.email, name: payload.name, picture: payload.picture };
+            const userData = { email: payload.email, name: payload.name, photoURL: payload.picture };
             setUser(userData);
             localStorage.setItem('user', JSON.stringify(userData));
             closeModal();
@@ -553,7 +383,7 @@ export default function App() {
         />
       )}
     {activeModal === "upload" && (
-  <UploadModal
+    <UploadModal
     uploadedFiles={uploadedFiles}
     handleFiles={handleFiles}
     removeFile={removeFile}
@@ -563,7 +393,7 @@ export default function App() {
     handleDragOver={handleDragOver}
     handleDragLeave={handleDragLeave}
     handleDrop={handleDrop}
-  />)}
+    />)}
 
     {/* Soundbar - only visible when there's a current song */}
     {currentSongId && (
@@ -579,7 +409,6 @@ export default function App() {
         currentSongId={currentSongId}
       />
     )}
-
     </div>
   );
 }
