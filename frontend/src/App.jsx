@@ -55,7 +55,7 @@ export default function App() {
             duration: '--:--',
             currentTime: '0:00',
             progress: 0,
-            cover: null,
+            cover: track.cover_art_url,  // Use cover art from backend
             repeatMode: 'none',
           };
 
@@ -308,9 +308,26 @@ export default function App() {
       body: formData,
     });
 
+    if (response.status === 409) {
+      // File already exists
+      const data = await response.json();
+      alert(`File "${data.filename}" is already in your library.`);
+      return;
+    }
+
     if (!response.ok) throw new Error('Upload failed');
 
-    fetchLibrary();
+    const data = await response.json();
+
+    // Check if this was a re-processing or new upload
+    if (data.message && (data.message.includes('already exists') || data.message.includes('re-processed'))) {
+      // File was re-processed or already existed - refresh library to show any updates
+      fetchLibrary();
+    } else {
+      // New file uploaded - refresh library
+      fetchLibrary();
+    }
+
     setUploadedFiles([]);
     closeModal();
   } catch (error) {
