@@ -4,7 +4,7 @@ export default function HomePage({ openModal, library, togglePlay }) {
   const navigate = useNavigate();
 
   return (
-    <div className="container">
+    <div className="container" style={{ paddingBottom: '4rem' }}>
       {/* Hero */}
       <section className="hero">
         <div className="hero-content">
