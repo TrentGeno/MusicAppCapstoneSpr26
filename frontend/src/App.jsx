@@ -247,7 +247,7 @@ useEffect(() => {
     console.error('Upload error:', error);
     alert('Server error: Make sure your Flask backend is running on port 5000');
   }
-};
+  };
 
   // Toggle play/pause and ensure only one track plays at a time
   const togglePlay = (songId) => {
