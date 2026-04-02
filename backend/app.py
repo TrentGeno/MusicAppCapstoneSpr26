@@ -510,5 +510,56 @@ def add_track_to_playlist(playlist_id):
 
     return jsonify({"message": "Track added to playlist"})
 
+@app.route("/playlists/<int:playlist_id>", methods=["GET"])
+def get_playlist(playlist_id):
+    playlist = db.session.get(Playlist, playlist_id)
+
+    if not playlist:
+        return jsonify({"error": "Playlist not found"}), 404
+
+    tracks = []
+    for t in playlist.tracks:
+        cover_art_url = None
+        if t.cover_art_path:
+            cover_art_full_path = os.path.join(app.config["COVER_FOLDER"], t.cover_art_path)
+            if os.path.exists(cover_art_full_path):
+                cover_art_url = f"http://localhost:5000/covers/{t.cover_art_path}"
+
+        tracks.append({
+            "track_id": t.track_id,
+            "title": t.title,
+            "artist": t.artist,
+            "album": t.album,
+            "duration": t.duration,
+            "filename": os.path.basename(t.file_path),
+            "cover_art_url": cover_art_url
+        })
+
+    return jsonify({
+        "playlist_id": playlist.playlist_id,
+        "name": playlist.name,
+        "description": playlist.description,
+        "track_count": len(tracks),
+        "tracks": tracks
+    }), 200
+
+
+@app.route("/playlists/<int:playlist_id>/remove-track", methods=["POST"])
+def remove_track_from_playlist(playlist_id):
+    data = request.get_json()
+    track_id = data.get("track_id")
+
+    playlist = db.session.get(Playlist, playlist_id)
+    track = db.session.get(Track, track_id)
+
+    if not playlist or not track:
+        return jsonify({"error": "Playlist or Track not found"}), 404
+
+    if track in playlist.tracks:
+        playlist.tracks.remove(track)
+        db.session.commit()
+
+    return jsonify({"message": "Track removed from playlist"})
+
 if __name__ == "__main__":
     app.run(debug=True)
