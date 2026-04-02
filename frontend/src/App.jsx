@@ -14,12 +14,15 @@ import PlaylistModal from './components/modals/PlaylistModal';
 export default function App() {
   // State management
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
   const [library, setLibrary] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
@@ -144,10 +147,11 @@ useEffect(() => {
 
   const handleSignOut = () => {
     setUser(null);
+    setDropdownOpen(false);
     localStorage.removeItem('user');
     if (window.google) {
       window.google.accounts.id.disableAutoSelect();
-    } 
+    }
   };
 
   // Volume control
@@ -175,12 +179,18 @@ useEffect(() => {
   };
 
   const replaySong = () => {
-    const song = library.find(s => s.id === currentSongId);
-    if (song) {
-      song.audio.currentTime = 0;
-      if (!song.isPlaying) togglePlay(song.id);
-    }
-  };
+  const song = library.find(s => s.id === currentSongId);
+  const index = library.findIndex(s => s.id === currentSongId);
+
+  if (song && song.audio.currentTime > 10) {
+    // More than 10 seconds in — restart the current song
+    song.audio.currentTime = 0;
+  } else {
+    // Within first 10 seconds — go to previous song
+    const prevIndex = (index - 1 + library.length) % library.length;
+    if (library[prevIndex]) togglePlay(library[prevIndex].id);
+  }
+};
 
   const handleSoundbarPlay = () => {
     if (currentSongId) {
@@ -199,13 +209,32 @@ useEffect(() => {
   };
 
   // File handling
+  const getFileKey = (file) => `${file.name}-${file.size}-${file.lastModified}`;
+
   const handleFiles = (files) => {
     const fileArray = Array.from(files).filter(file => file.type.startsWith('audio/'));
-    setUploadedFiles(fileArray);
+    setUploadedFiles(prev => {
+      const existingKeys = new Set(prev.map(getFileKey));
+      const newFiles = fileArray.filter(file => !existingKeys.has(getFileKey(file)));
+      if (newFiles.length < fileArray.length) {
+        // Duplicate items are ignored
+        console.warn('Skipped duplicate upload candidates');
+      }
+      return [...prev, ...newFiles];
+    });
   };
 
   const removeFile = (index) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadedFiles(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      setUploadProgress(prevProg => {
+        const key = getFileKey(prev[index]);
+        const nextProg = { ...prevProg };
+        delete nextProg[key];
+        return nextProg;
+      });
+      return next;
+    });
   };
 
   
@@ -341,18 +370,18 @@ useEffect(() => {
       </Routes>
 
      {activeModal === "playlist" && (
-    <PlaylistModal
-    playlistData={playlistData}
-    setPlaylistData={setPlaylistData}
-    handleCreatePlaylist={handleCreatePlaylist}
-    closeModal={closeModal}
-    />)}
+      <PlaylistModal
+      playlistData={playlistData}
+      setPlaylistData={setPlaylistData}
+      handleCreatePlaylist={handleCreatePlaylist}
+      closeModal={closeModal}
+      />)}
 
       {activeModal === "signin" && (
         <SignInModal
           handleGoogleSignIn={(response) => {
             const payload = JSON.parse(atob(response.credential.split(".")[1]));
-            const userData = { email: payload.email, name: payload.name, picture: payload.picture };
+            const userData = { email: payload.email, name: payload.name, photoURL: payload.picture };
             setUser(userData);
             localStorage.setItem('user', JSON.stringify(userData));
             closeModal();
@@ -362,15 +391,17 @@ useEffect(() => {
       )}
     {activeModal === "upload" && (
     <UploadModal
-    uploadedFiles={uploadedFiles}
-    handleFiles={handleFiles}
-    removeFile={removeFile}
-    handleUpload={handleUpload}
-    closeModal={closeModal}
-    isDragging={isDragging}
-    handleDragOver={handleDragOver}
-    handleDragLeave={handleDragLeave}
-    handleDrop={handleDrop}
+      uploadedFiles={uploadedFiles}
+      handleFiles={handleFiles}
+      removeFile={removeFile}
+      handleUpload={handleUpload}
+      closeModal={closeModal}
+      isDragging={isDragging}
+      handleDragOver={handleDragOver}
+      handleDragLeave={handleDragLeave}
+      handleDrop={handleDrop}
+      uploadProgress={uploadProgress}
+      isUploading={isUploading}
     />)}
 
     {/* Soundbar - only visible when there's a current song */}
