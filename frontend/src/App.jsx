@@ -10,6 +10,7 @@ import Soundbar from './components/Soundbar';
 import SignInModal from './components/modals/SignInModal';
 import UploadModal from './components/modals/UploadModal';
 import PlaylistModal from './components/modals/PlaylistModal';
+import Footer from './components/Footer';
 
 export default function App() {
   // State management
@@ -337,11 +338,11 @@ export default function App() {
 };
   
   return (
-    <div>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
       <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut}/>
 
-
+      <main style={{ flex: 1 }}>
       <Routes>
       <Route path="/" element={<HomePage openModal={openModal}library={library}togglePlay={togglePlay}/>} />
       <Route path="/library" element={<div style={{padding: '2rem'}}>Library coming soon</div>} />
@@ -349,7 +350,7 @@ export default function App() {
       <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
       <Route path="/playlists/:id" element={<Playlist />} />
       </Routes>
-
+      </main>
      {activeModal === "playlist" && (
     <PlaylistModal
     playlistData={playlistData}
@@ -397,6 +398,7 @@ export default function App() {
         currentSongId={currentSongId}
       />
     )}
+    <Footer />
     </div>
   );
 }
