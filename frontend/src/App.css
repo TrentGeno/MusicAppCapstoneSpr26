@@ -918,6 +918,8 @@ nav a:hover::after {
         gap: 1.5rem;
     }
 
+}
+
     /* ========================= */
 /* SPOTIFY PLAYLIST ADDITIONS */
 /* ========================= */
@@ -1067,7 +1069,6 @@ nav a:hover::after {
     color: #ff4d4d;
 }
 
-}
 
 /* ========================= */
 /* PLAYLIST PAGE STYLING */
@@ -1287,7 +1288,6 @@ nav a:hover::after {
 }
 
 .user-dropdown {
-  display: none;
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -1297,7 +1297,7 @@ nav a:hover::after {
   padding: 12px;
   min-width: 200px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .user-dropdown.open {

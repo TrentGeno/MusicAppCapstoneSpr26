@@ -9,7 +9,9 @@ export default function UploadModal({
   isDragging,
   handleDragOver,
   handleDragLeave,
-  handleDrop
+  handleDrop,
+  uploadProgress,
+  isUploading
 }) {
   return (
     <div
@@ -54,18 +56,29 @@ export default function UploadModal({
           {uploadedFiles.length > 0 && (
             <div className="file-list">
               <h3>Files to upload:</h3>
-              {uploadedFiles.map((file, index) => (
-                <div key={index} className="file-item">
-                  <span className="file-name">{file.name}</span>
-                  <span className="file-size">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                  <button
-                    className="remove-file"
-                    onClick={() => removeFile(index)}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+              {uploadedFiles.map((file, index) => {
+                const fileKey = `${file.name}-${file.size}-${file.lastModified}`;
+                const progress = uploadProgress?.[fileKey] ?? 0;
+                return (
+                  <div key={fileKey} className="file-item">
+                    <div className="file-details">
+                      <span className="file-name">{file.name}</span>
+                      <span className="file-size">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    </div>
+                    <button
+                      className="remove-file"
+                      onClick={() => removeFile(index)}
+                      disabled={isUploading}
+                    >
+                      ×
+                    </button>
+                    <div className="upload-progress">
+                      <progress value={progress} max="100" />
+                      <span className="progress-label">{progress}%</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -73,9 +86,9 @@ export default function UploadModal({
             <button
               className="btn btn-primary"
               onClick={handleUpload}
-              disabled={uploadedFiles.length === 0}
+              disabled={uploadedFiles.length === 0 || isUploading}
             >
-              Upload {uploadedFiles.length} File{uploadedFiles.length !== 1 ? 's' : ''}
+              {isUploading ? 'Uploading...' : `Upload ${uploadedFiles.length} File${uploadedFiles.length !== 1 ? 's' : ''}`}
             </button>
           </div>
         </div>
