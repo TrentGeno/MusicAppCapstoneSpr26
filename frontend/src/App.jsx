@@ -15,12 +15,15 @@ import Footer from './components/Footer';
 export default function App() {
   // State management
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
   const [library, setLibrary] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
@@ -123,9 +126,19 @@ export default function App() {
       .catch(err => console.error('Failed to load tracks:', err));
   }, [globalRepeatMode]);
 
-  useEffect(() => {
-    fetchLibrary();
-  }, [fetchLibrary]);
+useEffect(() => {
+  fetch('http://localhost:5000/playlists')
+    .then(res => res.json())
+    .then(data => {
+      setPlaylists(data.map(p => ({
+        id: p.playlist_id,
+        name: p.name,
+        description: p.description,
+        songCount: p.track_count
+      })));
+    })
+    .catch(err => console.error('Failed to load playlists:', err));
+}, []);
 
   // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
@@ -135,10 +148,11 @@ export default function App() {
 
   const handleSignOut = () => {
     setUser(null);
+    setDropdownOpen(false);
     localStorage.removeItem('user');
     if (window.google) {
       window.google.accounts.id.disableAutoSelect();
-    } 
+    }
   };
 
   // Volume control
@@ -166,12 +180,18 @@ export default function App() {
   };
 
   const replaySong = () => {
-    const song = library.find(s => s.id === currentSongId);
-    if (song) {
-      song.audio.currentTime = 0;
-      if (!song.isPlaying) togglePlay(song.id);
-    }
-  };
+  const song = library.find(s => s.id === currentSongId);
+  const index = library.findIndex(s => s.id === currentSongId);
+
+  if (song && song.audio.currentTime > 10) {
+    // More than 10 seconds in — restart the current song
+    song.audio.currentTime = 0;
+  } else {
+    // Within first 10 seconds — go to previous song
+    const prevIndex = (index - 1 + library.length) % library.length;
+    if (library[prevIndex]) togglePlay(library[prevIndex].id);
+  }
+};
 
   const handleSoundbarPlay = () => {
     if (currentSongId) {
@@ -190,13 +210,32 @@ export default function App() {
   };
 
   // File handling
+  const getFileKey = (file) => `${file.name}-${file.size}-${file.lastModified}`;
+
   const handleFiles = (files) => {
     const fileArray = Array.from(files).filter(file => file.type.startsWith('audio/'));
-    setUploadedFiles(fileArray);
+    setUploadedFiles(prev => {
+      const existingKeys = new Set(prev.map(getFileKey));
+      const newFiles = fileArray.filter(file => !existingKeys.has(getFileKey(file)));
+      if (newFiles.length < fileArray.length) {
+        // Duplicate items are ignored
+        console.warn('Skipped duplicate upload candidates');
+      }
+      return [...prev, ...newFiles];
+    });
   };
 
   const removeFile = (index) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadedFiles(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      setUploadProgress(prevProg => {
+        const key = getFileKey(prev[index]);
+        const nextProg = { ...prevProg };
+        delete nextProg[key];
+        return nextProg;
+      });
+      return next;
+    });
   };
 
   
@@ -217,7 +256,28 @@ export default function App() {
     handleFiles(e.dataTransfer.files);
   };
 
+  const handleUpload = async () => {
+  if (uploadedFiles.length === 0) return;
 
+  const formData = new FormData();
+  uploadedFiles.forEach(file => formData.append('file', file));
+
+  try {
+    const response = await fetch('http://localhost:5000/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) throw new Error('Upload failed');
+
+    fetchLibrary();
+    setUploadedFiles([]);
+    closeModal();
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert('Server error: Make sure your Flask backend is running on port 5000');
+  }
+  };
 
   // Toggle play/pause and ensure only one track plays at a time
   const togglePlay = (songId) => {
@@ -271,69 +331,28 @@ export default function App() {
 
   // Create playlist
   const handleCreatePlaylist = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('http://localhost:5000/playlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(playlistData)
-      });
-      const data = await response.json();
-      console.log('Playlist created:', data);
-      
-      const newPlaylist = {
-        id: Date.now(),
-        name: playlistData.name,
-        description: playlistData.description || 'No description',
-        songCount: 0
-      };
-      
-      setPlaylists(prev => [...prev, newPlaylist]);
-      setPlaylistData({ name: '', description: '' });
-      closeModal();
-    } catch (error) {
-      console.error('Playlist creation error:', error);
-      alert('Failed to create playlist. Please try again.');
-    }
-  };
-
-  const handleUpload = async () => {
-  if (uploadedFiles.length === 0) return;
-
-  const formData = new FormData();
-  uploadedFiles.forEach(file => formData.append('file', file));
-
+  e.preventDefault();
   try {
-    const response = await fetch('http://localhost:5000/upload', {
+    const response = await fetch('http://localhost:5000/playlist', {
       method: 'POST',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(playlistData)
     });
-
-    if (response.status === 409) {
-      // File already exists
-      const data = await response.json();
-      alert(`File "${data.filename}" is already in your library.`);
-      return;
-    }
-
-    if (!response.ok) throw new Error('Upload failed');
-
     const data = await response.json();
 
-    // Check if this was a re-processing or new upload
-    if (data.message && (data.message.includes('already exists') || data.message.includes('re-processed'))) {
-      // File was re-processed or already existed - refresh library to show any updates
-      fetchLibrary();
-    } else {
-      // New file uploaded - refresh library
-      fetchLibrary();
-    }
+    const newPlaylist = {
+      id: data.playlist_id,  // ← use the real ID from the backend
+      name: data.name,
+      description: playlistData.description || 'No description',
+      songCount: 0
+    };
 
-    setUploadedFiles([]);
+    setPlaylists(prev => [...prev, newPlaylist]);
+    setPlaylistData({ name: '', description: '' });
     closeModal();
   } catch (error) {
-    console.error('Upload error:', error);
-    alert('Server error: Make sure your Flask backend is running on port 5000');
+    console.error('Playlist creation error:', error);
+    alert('Failed to create playlist. Please try again.');
   }
 };
   
@@ -352,18 +371,18 @@ export default function App() {
       </Routes>
       </main>
      {activeModal === "playlist" && (
-    <PlaylistModal
-    playlistData={playlistData}
-    setPlaylistData={setPlaylistData}
-    handleCreatePlaylist={handleCreatePlaylist}
-    closeModal={closeModal}
-    />)}
+      <PlaylistModal
+      playlistData={playlistData}
+      setPlaylistData={setPlaylistData}
+      handleCreatePlaylist={handleCreatePlaylist}
+      closeModal={closeModal}
+      />)}
 
       {activeModal === "signin" && (
         <SignInModal
           handleGoogleSignIn={(response) => {
             const payload = JSON.parse(atob(response.credential.split(".")[1]));
-            const userData = { email: payload.email, name: payload.name, picture: payload.picture };
+            const userData = { email: payload.email, name: payload.name, photoURL: payload.picture };
             setUser(userData);
             localStorage.setItem('user', JSON.stringify(userData));
             closeModal();
@@ -373,15 +392,17 @@ export default function App() {
       )}
     {activeModal === "upload" && (
     <UploadModal
-    uploadedFiles={uploadedFiles}
-    handleFiles={handleFiles}
-    removeFile={removeFile}
-    handleUpload={handleUpload}
-    closeModal={closeModal}
-    isDragging={isDragging}
-    handleDragOver={handleDragOver}
-    handleDragLeave={handleDragLeave}
-    handleDrop={handleDrop}
+      uploadedFiles={uploadedFiles}
+      handleFiles={handleFiles}
+      removeFile={removeFile}
+      handleUpload={handleUpload}
+      closeModal={closeModal}
+      isDragging={isDragging}
+      handleDragOver={handleDragOver}
+      handleDragLeave={handleDragLeave}
+      handleDrop={handleDrop}
+      uploadProgress={uploadProgress}
+      isUploading={isUploading}
     />)}
 
     {/* Soundbar - only visible when there's a current song */}
