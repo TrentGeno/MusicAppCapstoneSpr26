@@ -148,3 +148,7 @@ vite.config.ts.timestamp-*
 
 backend/instance/music_app.db
 backend/instance/
+
+# Ignore uploaded files but keep the directory
+backend/uploads/*
+!backend/uploads/.gitkeep

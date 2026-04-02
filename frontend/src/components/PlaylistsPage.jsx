@@ -5,7 +5,7 @@ export default function PlaylistsPage({ playlists, openModal }) {
   const navigate = useNavigate();
 
   return (
-    <div className="container">
+    <div className="container" style={{ padding: '0 3rem' }}>
     <section id="playlists" className="section">
       <div className="section-header">
         <h2>Your Playlists</h2>
@@ -17,7 +17,7 @@ export default function PlaylistsPage({ playlists, openModal }) {
           Create Playlist →
         </a>
       </div>
-      <div className="music-grid">
+      <div className="music-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)',padding: '0 1rem'}}>
         {playlists.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📁</div>
@@ -34,7 +34,7 @@ export default function PlaylistsPage({ playlists, openModal }) {
               className="music-card"
               onClick={() => navigate(`/playlists/${playlist.id}`)}
             >
-              <div className="card-cover" style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
+              <div className="card-cover" style={{background: 'linear-gradient(135deg, #667eea, #764ba2)',height: '160px',aspectRatio: 'unset'}}>
                 <span className="cover-initial">📋</span>
               </div>
               <div className="card-info">
