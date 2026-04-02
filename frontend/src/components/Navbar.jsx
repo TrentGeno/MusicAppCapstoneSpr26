@@ -1,6 +1,9 @@
 import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function Navbar({ user, onSignIn, onSignOut }) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
   return (
     <header className="header">
       <NavLink to="/" className="logo">OffBeat</NavLink>
@@ -12,16 +15,23 @@ export default function Navbar({ user, onSignIn, onSignOut }) {
       <div className="auth-section">
         {user ? (
           <div className="user-menu">
-            <div className="user-info" onClick={() => document.getElementById('user-dropdown').classList.toggle('open')}>
-              <img src={user.picture} alt="avatar" className="user-avatar" />
+            <div className="user-info" onClick={() => setDropdownOpen(prev => !prev)}>
+              <img
+                src={user.photoURL}
+                alt="user-avatar"
+                referrerPolicy="no-referrer"
+                className="user-avatar"
+              />
               <span className="user-name">{user.name}</span>
               <span className="dropdown-arrow">▾</span>
             </div>
-            <div id="user-dropdown" className="user-dropdown">
-              <p className="dropdown-email">{user.email}</p>
-              <hr className="dropdown-divider" />
-              <button className="dropdown-signout" onClick={onSignOut}>Sign Out</button>
-            </div>
+            {dropdownOpen && (
+              <div className="user-dropdown">
+                <p className="dropdown-email">{user.email}</p>
+                <hr className="dropdown-divider" />
+                <button className="dropdown-signout" onClick={onSignOut}>Sign Out</button>
+              </div>
+            )}
           </div>
         ) : (
           <button className="btn btn-signin" onClick={onSignIn}>Sign In</button>
