@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
+
 export default function PlaylistsPage({ playlists, openModal }) {
   const navigate = useNavigate();
 
