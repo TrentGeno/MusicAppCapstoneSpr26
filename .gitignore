@@ -152,3 +152,5 @@ backend/instance/
 # Ignore uploaded files but keep the directory
 backend/uploads/*
 !backend/uploads/.gitkeep
+backend/covers/*
+!backend/covers/.gitkeep
