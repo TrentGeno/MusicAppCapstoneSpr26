@@ -17,7 +17,7 @@ export default function PlaylistsPage({ playlists, openModal }) {
           Create Playlist →
         </a>
       </div>
-      <div className="music-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)',padding: '0 1rem'}}>
+      <div className="music-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', padding: '0 1rem' }}>
         {playlists.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📁</div>
@@ -30,17 +30,32 @@ export default function PlaylistsPage({ playlists, openModal }) {
         ) : (
           playlists.map(playlist => (
             <div
-              key={playlist.id}
-              className="music-card"
-              onClick={() => navigate(`/playlists/${playlist.id}`)}
-            >
-              <div className="card-cover" style={{background: 'linear-gradient(135deg, #667eea, #764ba2)',height: '160px',aspectRatio: 'unset'}}>
-                <span className="cover-initial">📋</span>
+          key={playlist.id}
+          className="music-card"
+          onClick={() => navigate(`/playlists/${playlist.id}`)}
+          style={{ cursor: 'pointer', padding: '0.75rem 0.75rem 0.5rem 0.75rem' }}>
+              <div style={{
+            width: '100%',
+            aspectRatio: '1',
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2rem',
+            marginBottom: '0.4rem',
+            overflow: 'hidden'}}>
+                <span>📋</span>
               </div>
-              <div className="card-info">
-                <h3 className="card-title">{playlist.name}</h3>
-                <p className="card-artist">{playlist.songCount} songs</p>
-              </div>
+              <p style={{
+                margin: 0,
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                      textOverflow: 'ellipsis',}}>
+                {playlist.name}
+              </p>
             </div>
           ))
         )}
