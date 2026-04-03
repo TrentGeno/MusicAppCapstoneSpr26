@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import './App.css';
+import React, { useState, useEffect, useCallback, useRef } from 'react';import './App.css';
 import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -27,10 +26,11 @@ export default function App() {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
+  const playlistQueueRef = useRef([]);
   const [user, setUser] = useState(() => {
   const saved = localStorage.getItem('user');
   return saved ? JSON.parse(saved) : null;
-  });
+});
   
     // Fetch all tracks from backend and wire up Audio objects
   const fetchLibrary = useCallback(() => {
@@ -84,39 +84,60 @@ export default function App() {
             }
           });
 
-          audio.addEventListener('ended', () => {
-            setLibrary(prev => {
-              const index = prev.findIndex(s => s.id === song.id);
-              if (index === -1) return prev;
-              const current = prev[index];
-              const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
+                audio.addEventListener('ended', () => {
+                    setLibrary(prev => {
+                      const index = prev.findIndex(s => s.id === song.id);
+                      if (index === -1) return prev;
+                      const current = prev[index];
+                      const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
 
-              if (mode === 'one') {
-                current.audio.currentTime = 0;
-                current.audio.play();
-                const copy = [...prev];
-                copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
-                return copy;
-              }
+                      if (mode === 'one') {
+                        current.audio.currentTime = 0;
+                        current.audio.play();
+                        const copy = [...prev];
+                        copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
+                        return copy;
+                      }
 
-              if (mode === 'all') {
-                const nextIndex = (index + 1) % prev.length;
-                return prev.map((s, i) => {
-                  if (i === index) return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
-                  if (i === nextIndex) {
-                    s.audio.currentTime = 0;
-                    s.audio.play();
-                    return { ...s, isPlaying: true };
-                  }
-                  return { ...s, isPlaying: false };
-                });
-              }
+                      if (mode === 'all') {
+                        const nextIndex = (index + 1) % prev.length;
+                        return prev.map((s, i) => {
+                          if (i === index) return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
+                          if (i === nextIndex) {
+                            s.audio.currentTime = 0;
+                            s.audio.play();
+                            return { ...s, isPlaying: true };
+                          }
+                          return { ...s, isPlaying: false };
+                        });
+                      }
 
-              return prev.map(s =>
-                s.id === song.id ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' } : s
-              );
-            });
-          });
+                      // Playlist queue auto-advance
+                      const queue = playlistQueueRef.current;
+                      if (queue.length > 0) {
+                        const currentQueueIndex = queue.indexOf(song.id);
+                        const nextId = queue[currentQueueIndex + 1];
+                        if (nextId) {
+                          const nextSong = prev.find(s => s.id === nextId);
+                          if (nextSong) {
+                            setTimeout(() => {
+                              nextSong.audio.currentTime = 0;
+                              nextSong.audio.play();
+                              setCurrentSongId(nextId);
+                              setLibrary(l => l.map(s => ({
+                                ...s,
+                                isPlaying: s.id === nextId
+                              })));
+                            }, 100);
+                          }
+                        }
+                      }
+
+                      return prev.map(s =>
+                        s.id === song.id ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' } : s
+                      );
+                    });
+                  });
 
           return song;
         });
@@ -363,11 +384,11 @@ useEffect(() => {
 
       <main style={{ flex: 1 }}>
       <Routes>
-      <Route path="/" element={<HomePage openModal={openModal}library={library}togglePlay={togglePlay}/>} />
+      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} />} />
       <Route path="/library" element={<div style={{padding: '2rem'}}>Library coming soon</div>} />
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
       <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
-      <Route path="/playlists/:id" element={<Playlist />} />
+      <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} />} />
       </Routes>
       </main>
      {activeModal === "playlist" && (
@@ -417,6 +438,7 @@ useEffect(() => {
         skipSong={skipSong}
         library={library}
         currentSongId={currentSongId}
+        seek={seek}
       />
     )}
     <Footer />
