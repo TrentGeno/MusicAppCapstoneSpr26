@@ -10,6 +10,8 @@ import SignInModal from './components/modals/SignInModal';
 import UploadModal from './components/modals/UploadModal';
 import PlaylistModal from './components/modals/PlaylistModal';
 import Footer from './components/Footer';
+import RecentlyAddedPage from './components/RecentlyAddedPage';
+
 
 export default function App() {
   // State management
@@ -159,6 +161,10 @@ useEffect(() => {
       })));
     })
     .catch(err => console.error('Failed to load playlists:', err));
+}, []);
+
+useEffect(() => {
+  fetchLibrary();
 }, []);
 
   // Modal functions
@@ -384,11 +390,12 @@ useEffect(() => {
 
       <main style={{ flex: 1 }}>
       <Routes>
-      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} />} />
+      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} />} />
       <Route path="/library" element={<div style={{padding: '2rem'}}>Library coming soon</div>} />
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
       <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
       <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} />} />
+      <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} />} />
       </Routes>
       </main>
      {activeModal === "playlist" && (
