@@ -15,6 +15,7 @@ from mutagen.wave import WAVE
 import musicbrainzngs
 import requests
 from urllib.parse import quote
+from sqlalchemy import text as sa_text
 
 app = Flask(__name__)
 init_db(app)
@@ -481,22 +482,36 @@ def create_playlist():
 
 @app.route("/playlists", methods=["GET"])
 def get_playlists():
-    playlists = Playlist.query.filter_by(user_id=1).all()
+    playlists = Playlist.query.filter_by(user_id=1).order_by(Playlist.playlist_id.desc()).all()
 
-    return jsonify([
-        {
+    result = []
+    for p in playlists:
+        cover_tracks = db.session.execute(
+            db.text("""
+                SELECT t.cover_art_path FROM tracks t
+                JOIN playlist_tracks pt ON t.track_id = pt.track_id
+                WHERE pt.playlist_id = :pid
+                ORDER BY pt.added_at ASC NULLS LAST
+                LIMIT 4
+            """),
+            {"pid": p.playlist_id}
+        ).fetchall()
+
+        cover_urls = [
+            f"http://localhost:5000/covers/{quote(row.cover_art_path)}"
+            for row in cover_tracks
+            if row.cover_art_path and os.path.exists(os.path.join(app.config["COVER_FOLDER"], row.cover_art_path))
+        ]
+
+        result.append({
             "playlist_id": p.playlist_id,
             "name": p.name,
             "description": p.description,
             "track_count": len(p.tracks),
-            "cover_urls": [
-                f"http://localhost:5000/covers/{quote(t.cover_art_path)}"
-                for t in p.tracks[:4]
-                if t.cover_art_path and os.path.exists(os.path.join(app.config["COVER_FOLDER"], t.cover_art_path))
-            ]
-        }
-        for p in playlists
-    ])
+            "cover_urls": cover_urls
+        })
+
+    return jsonify(result)
 
 @app.route("/playlist/<int:playlist_id>/add-track", methods=["POST"])
 def add_track_to_playlist(playlist_id):
@@ -519,17 +534,26 @@ def add_track_to_playlist(playlist_id):
 @app.route("/playlists/<int:playlist_id>", methods=["GET"])
 def get_playlist(playlist_id):
     playlist = db.session.get(Playlist, playlist_id)
-
     if not playlist:
         return jsonify({"error": "Playlist not found"}), 404
 
+    sorted_tracks = db.session.execute(
+        sa_text("""
+            SELECT t.* FROM tracks t
+            JOIN playlist_tracks pt ON t.track_id = pt.track_id
+            WHERE pt.playlist_id = :playlist_id
+            ORDER BY pt.added_at ASC
+        """),
+        {"playlist_id": playlist_id}
+    ).fetchall()
+
     tracks = []
-    for t in playlist.tracks:
+    for t in sorted_tracks:
         cover_art_url = None
         if t.cover_art_path:
             cover_art_full_path = os.path.join(app.config["COVER_FOLDER"], t.cover_art_path)
             if os.path.exists(cover_art_full_path):
-                cover_art_url = f"http://localhost:5000/covers/{t.cover_art_path}"
+                cover_art_url = f"http://localhost:5000/covers/{quote(t.cover_art_path)}"
 
         tracks.append({
             "track_id": t.track_id,

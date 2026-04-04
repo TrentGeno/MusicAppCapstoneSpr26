@@ -60,6 +60,18 @@ def init_db(app: Flask):
                 conn.execute(db.text("ALTER TABLE tracks ADD COLUMN user_id INTEGER REFERENCES users(user_id)"))
                 print("✅ Added missing tracks.user_id column")
 
+            #updates tables missing the new playlist columns, if they don't exist
+            playlist_cols = {r[1] for r in conn.execute(db.text("PRAGMA table_info(playlists)"))}
+            if 'created_at' not in playlist_cols:
+                conn.execute(db.text("ALTER TABLE playlists ADD COLUMN created_at TIMESTAMP"))
+                print("✅ Added missing playlists.created_at column")
+
+            pt_cols = {r[1] for r in conn.execute(db.text("PRAGMA table_info(playlist_tracks)"))}
+            if 'added_at' not in pt_cols:
+                conn.execute(db.text("ALTER TABLE playlist_tracks ADD COLUMN added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+                conn.commit()
+                print("✅ Added missing playlist_tracks.added_at column")
+
         except Exception as e:
             print(f"⚠️ Schema migration check failed: {e}")
         finally:
