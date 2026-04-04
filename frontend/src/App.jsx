@@ -150,17 +150,7 @@ export default function App() {
   }, [globalRepeatMode]);
 
 useEffect(() => {
-  fetch('http://localhost:5000/playlists')
-    .then(res => res.json())
-    .then(data => {
-      setPlaylists(data.map(p => ({
-        id: p.playlist_id,
-        name: p.name,
-        description: p.description,
-        songCount: p.track_count
-      })));
-    })
-    .catch(err => console.error('Failed to load playlists:', err));
+  fetchPlaylists();
 }, []);
 
 useEffect(() => {
@@ -382,6 +372,21 @@ useEffect(() => {
     alert('Failed to create playlist. Please try again.');
   }
 };
+
+      const fetchPlaylists = useCallback(() => {
+        fetch('http://localhost:5000/playlists')
+          .then(res => res.json())
+          .then(data => {
+            setPlaylists(data.map(p => ({
+              id: p.playlist_id,
+              name: p.name,
+              description: p.description,
+              songCount: p.track_count,
+              coverUrls: p.cover_urls || []
+            })));
+          })
+          .catch(err => console.error('Failed to load playlists:', err));
+      }, []);
   
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -390,12 +395,12 @@ useEffect(() => {
 
       <main style={{ flex: 1 }}>
       <Routes>
-      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} />} />
+      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/library" element={<div style={{padding: '2rem'}}>Library coming soon</div>} />
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
       <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
       <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} />} />
-      <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} />} />
+      <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       </Routes>
       </main>
      {activeModal === "playlist" && (

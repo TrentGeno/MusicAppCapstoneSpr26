@@ -14,6 +14,7 @@ from mutagen.oggvorbis import OggVorbis
 from mutagen.wave import WAVE
 import musicbrainzngs
 import requests
+from urllib.parse import quote
 
 app = Flask(__name__)
 init_db(app)
@@ -487,7 +488,12 @@ def get_playlists():
             "playlist_id": p.playlist_id,
             "name": p.name,
             "description": p.description,
-            "track_count": len(p.tracks)
+            "track_count": len(p.tracks),
+            "cover_urls": [
+                f"http://localhost:5000/covers/{quote(t.cover_art_path)}"
+                for t in p.tracks[:4]
+                if t.cover_art_path and os.path.exists(os.path.join(app.config["COVER_FOLDER"], t.cover_art_path))
+            ]
         }
         for p in playlists
     ])
