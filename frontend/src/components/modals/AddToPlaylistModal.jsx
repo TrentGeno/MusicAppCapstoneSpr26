@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function AddToPlaylistModal({ song, playlists, onClose }) {
+export default function AddToPlaylistModal({ song, playlists, onClose, fetchPlaylists }) {
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(null);
 
@@ -13,6 +13,7 @@ export default function AddToPlaylistModal({ song, playlists, onClose }) {
         body: JSON.stringify({ track_id: song.id })
       });
       setAdded(playlistId);
+      if (fetchPlaylists) fetchPlaylists();
     } catch (err) {
       console.error('Failed to add track:', err);
     } finally {

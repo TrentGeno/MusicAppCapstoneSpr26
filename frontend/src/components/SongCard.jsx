@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AddToPlaylistModal from './modals/AddToPlaylistModal';
 
-export default function SongCard({ song, togglePlay, playlists, onDelete }) {
+export default function SongCard({ song, togglePlay, playlists, onDelete, fetchPlaylists }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [addToPlaylist, setAddToPlaylist] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -83,9 +83,10 @@ export default function SongCard({ song, togglePlay, playlists, onDelete }) {
 
       {addToPlaylist && (
         <AddToPlaylistModal
-          song={song}
-          playlists={playlists}
-          onClose={() => setAddToPlaylist(false)}
+            song={song}
+            playlists={playlists}
+            onClose={() => setAddToPlaylist(false)}
+            fetchPlaylists={fetchPlaylists}
         />
       )}
 
