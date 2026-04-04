@@ -561,5 +561,26 @@ def remove_track_from_playlist(playlist_id):
 
     return jsonify({"message": "Track removed from playlist"})
 
+@app.route("/tracks/<int:track_id>", methods=["DELETE"])
+def delete_track(track_id):
+    track = db.session.get(Track, track_id)
+    if not track:
+        return jsonify({"error": "Track not found"}), 404
+    try:
+        if os.path.exists(track.file_path):
+            os.remove(track.file_path)
+        if track.cover_art_path:
+            other = Track.query.filter_by(cover_art_path=track.cover_art_path).count()
+            if other <= 1:
+                cover_full = os.path.join(app.config["COVER_FOLDER"], track.cover_art_path)
+                if os.path.exists(cover_full):
+                    os.remove(cover_full)
+        db.session.delete(track)
+        db.session.commit()
+        return jsonify({"message": "Track deleted"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True)
