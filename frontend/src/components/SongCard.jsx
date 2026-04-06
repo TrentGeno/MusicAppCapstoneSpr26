@@ -117,7 +117,7 @@ export default function SongCard({ song, togglePlay, playlists, onDelete, fetchP
               </button>
               <button
                 className="btn"
-                style={{ flex: 1, background: '#ff4d4d', color: 'white', border: 'none' }}
+                style={{ flex: 1, background: '#ff4d4d', color: 'var(--text-primary)', border: 'none' }}
                 onClick={async () => {
                   try {
                     await fetch(`http://localhost:5000/tracks/${song.id}`, { method: 'DELETE' });
