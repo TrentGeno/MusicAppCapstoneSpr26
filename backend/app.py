@@ -453,6 +453,33 @@ def get_tracks():
         for t in tracks
     ])
 
+@app.route("/playlists/<int:playlist_id>", methods=["PUT"])
+def update_playlist(playlist_id):
+    playlist = db.session.get(Playlist, playlist_id)
+    if not playlist:
+        return jsonify({"error": "Playlist not found"}), 404
+    try:
+        playlist.name = request.form.get('name', playlist.name)
+        playlist.description = request.form.get('description', playlist.description)
+        db.session.commit()
+        return jsonify({"playlist_id": playlist.playlist_id, "name": playlist.name, "description": playlist.description}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/playlists/<int:playlist_id>", methods=["DELETE"])
+def delete_playlist(playlist_id):
+    playlist = db.session.get(Playlist, playlist_id)
+    if not playlist:
+        return jsonify({"error": "Playlist not found"}), 404
+    try:
+        db.session.delete(playlist)
+        db.session.commit()
+        return jsonify({"message": "Playlist deleted"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/playlist", methods=["POST"])
 def create_playlist():
     data = request.get_json()
