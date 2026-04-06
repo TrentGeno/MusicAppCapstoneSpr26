@@ -274,26 +274,60 @@ useEffect(() => {
   };
 
   const handleUpload = async () => {
-  if (uploadedFiles.length === 0) return;
+    if (uploadedFiles.length === 0 || isUploading) return;
 
-  const formData = new FormData();
-  uploadedFiles.forEach(file => formData.append('file', file));
+    const formData = new FormData();
+    uploadedFiles.forEach(file => formData.append('file', file));
 
-  try {
-    const response = await fetch('http://localhost:5000/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    const initialProgress = uploadedFiles.reduce((acc, file) => {
+      acc[getFileKey(file)] = 0;
+      return acc;
+    }, {});
 
-    if (!response.ok) throw new Error('Upload failed');
+    setUploadProgress(initialProgress);
+    setIsUploading(true);
 
-    fetchLibrary();
-    setUploadedFiles([]);
-    closeModal();
-  } catch (error) {
-    console.error('Upload error:', error);
-    alert('Server error: Make sure your Flask backend is running on port 5000');
-  }
+    try {
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'http://localhost:5000/upload');
+
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(prev => {
+            const next = { ...prev };
+            Object.keys(next).forEach(key => {
+              next[key] = percent;
+            });
+            return next;
+          });
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.onabort = () => reject(new Error('Upload aborted by the user'));
+
+        xhr.send(formData);
+      });
+
+      fetchLibrary();
+      setUploadedFiles([]);
+      closeModal();
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Server error: Make sure your Flask backend is running on port 5000');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress({});
+    }
   };
 
   // Toggle play/pause and ensure only one track plays at a time
