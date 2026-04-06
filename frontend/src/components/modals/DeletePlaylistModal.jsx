@@ -1,7 +1,7 @@
 export default function DeletePlaylistModal({ playlist, onClose, onDelete }) {
   async function handleDelete() {
     try {
-      await fetch(`http://localhost:5000/playlists/${playlist.playlist_id}`, { method: 'DELETE' });
+      await fetch(`http://localhost:5000/playlists/${playlist.id}`, { method: 'DELETE' });
       onDelete();
     } catch (err) {
       console.error('Failed to delete playlist:', err);
