@@ -103,10 +103,10 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
             {(playlist.tracks || []).slice(0, 4).map((t, i) => (
               t.cover_art_url
                 ? <img key={i} src={t.cover_art_url} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
-                : <div key={i} style={{ background: `linear-gradient(135deg, rgba(185,103,255,${0.7 - i * 0.12}), rgba(255,110,199,${0.6 - i * 0.1}))`, borderRadius: 6 }} />
+                : <div key={i} style={{ background: `linear-gradient(135deg, rgba(var(--accent-purple-rgb),${0.7 - i * 0.12}), rgba(var(--accent-pink-rgb),${0.6 - i * 0.1}))`, borderRadius: 6 }} />
             ))}
             {Array.from({ length: Math.max(0, 4 - (playlist.tracks || []).length) }).map((_, i) => (
-              <div key={`empty-${i}`} style={{ background: 'rgba(185,103,255,0.2)', borderRadius: 6 }} />
+              <div key={`empty-${i}`} style={{ background: 'rgba(var(--accent-purple-rgb),0.2)', borderRadius: 6 }} />
             ))}
           </div>
 
@@ -206,7 +206,7 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
               <div className="song-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {t.cover_art_url
                   ? <img src={t.cover_art_url} alt="cover" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} />
-                  : <div style={{ width: 40, height: 40, borderRadius: 4, background: 'linear-gradient(135deg, #b967ff, #ff6ec7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600 }}>
+                  : <div style={{ width: 40, height: 40, borderRadius: 4, background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600 }}>
                       {t.title?.charAt(0).toUpperCase()}
                     </div>
                 }

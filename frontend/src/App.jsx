@@ -9,6 +9,7 @@ import Soundbar from './components/Soundbar';
 import SignInModal from './components/modals/SignInModal';
 import UploadModal from './components/modals/UploadModal';
 import PlaylistModal from './components/modals/PlaylistModal';
+import CustomizeModal from './components/modals/CustomizeModal';
 import Footer from './components/Footer';
 import RecentlyAddedPage from './components/RecentlyAddedPage';
 
@@ -29,18 +30,56 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
   const playlistQueueRef = useRef([]);
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('appTheme');
+    return saved ? JSON.parse(saved) : {
+      main: '#b967ff',
+      accent1: '#ff6ec7',
+      accent2: '#05d9ff',
+    };
+  });
   const [user, setUser] = useState(() => {
-  const saved = localStorage.getItem('user');
-  return saved ? JSON.parse(saved) : null;
-});
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const hexToRgb = (hex) => {
+    const cleaned = hex.replace('#', '').length === 3
+      ? hex.replace('#', '').split('').map((c) => c + c).join('')
+      : hex.replace('#', '');
+    const num = parseInt(cleaned, 16);
+    return [
+      (num >> 16) & 255,
+      (num >> 8) & 255,
+      num & 255,
+    ].join(',');
+  };
+
+  const themeStyles = {
+    '--main-color': theme.main,
+    '--accent-color': theme.accent1,
+    '--accent-color-secondary': theme.accent2,
+    '--accent-purple': theme.main,
+    '--accent-pink': theme.accent1,
+    '--accent-blue': theme.accent2,
+    '--accent-purple-rgb': hexToRgb(theme.main),
+    '--accent-pink-rgb': hexToRgb(theme.accent1),
+    '--accent-blue-rgb': hexToRgb(theme.accent2),
+    '--glow': `rgba(${hexToRgb(theme.main)}, 0.3)`,
+  };
+
+  const handleThemeSave = (newTheme) => {
+    setTheme(newTheme);
+    localStorage.setItem('appTheme', JSON.stringify(newTheme));
+  };
   
     // Fetch all tracks from backend and wire up Audio objects
   const fetchLibrary = useCallback(() => {
     const gradients = [
-      'linear-gradient(135deg, #a855f7, #ec4899)',
-      'linear-gradient(135deg, #ff6ec7, #ff9a56)',
-      'linear-gradient(135deg, #05d9ff, #7b68ee)',
-      'linear-gradient(135deg, #ffd700, #ff6347)',
+      `linear-gradient(135deg, ${theme.main}, ${theme.accent1})`,
+      `linear-gradient(135deg, ${theme.accent1}, ${theme.accent2})`,
+      `linear-gradient(135deg, ${theme.accent2}, ${theme.main})`,
+      `linear-gradient(135deg, ${theme.main}, ${theme.accent2})`,
     ];
 
     fetch('http://localhost:5000/tracks')
@@ -147,7 +186,7 @@ export default function App() {
         setLibrary(loadedSongs);
       })
       .catch(err => console.error('Failed to load tracks:', err));
-  }, [globalRepeatMode]);
+  }, [globalRepeatMode, theme]);
 
 useEffect(() => {
   fetchPlaylists();
@@ -155,7 +194,7 @@ useEffect(() => {
 
 useEffect(() => {
   fetchLibrary();
-}, []);
+}, [fetchLibrary]);
 
   // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
@@ -399,9 +438,9 @@ useEffect(() => {
       }, []);
   
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+<div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', ...themeStyles }}>
 
-      <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut}/>
+      <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
       <main style={{ flex: 1 }}>
       <Routes>
@@ -430,6 +469,13 @@ useEffect(() => {
             localStorage.setItem('user', JSON.stringify(userData));
             closeModal();
           }}
+          closeModal={closeModal}
+        />
+      )}
+      {activeModal === 'customize' && (
+        <CustomizeModal
+          theme={theme}
+          onSave={handleThemeSave}
           closeModal={closeModal}
         />
       )}
