@@ -8,7 +8,7 @@ export default function Navbar({ user, onSignIn, onSignOut, onCustomize }) {
     <header className="header">
       <NavLink to="/" className="logo">OffBeat</NavLink>
       <nav className="nav">
-        <NavLink className="nav-link" to="/library">Library</NavLink>
+        <NavLink className="nav-link" to="/LibraryPage">Library</NavLink>
         <NavLink className="nav-link" to="/playlists">Playlists</NavLink>
         <NavLink className="nav-link" to="/artists">Artists</NavLink>
       </nav>
