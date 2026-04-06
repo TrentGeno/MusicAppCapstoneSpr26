@@ -1,14 +1,14 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
 
-export default function Navbar({ user, onSignIn, onSignOut }) {
+export default function Navbar({ user, onSignIn, onSignOut, onCustomize }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
     <header className="header">
       <NavLink to="/" className="logo">OffBeat</NavLink>
       <nav className="nav">
-        <NavLink className="nav-link" to="/library">Library</NavLink>
+        <NavLink className="nav-link" to="/LibraryPage">Library</NavLink>
         <NavLink className="nav-link" to="/playlists">Playlists</NavLink>
         <NavLink className="nav-link" to="/artists">Artists</NavLink>
       </nav>
@@ -29,6 +29,9 @@ export default function Navbar({ user, onSignIn, onSignOut }) {
               <div className="user-dropdown">
                 <p className="dropdown-email">{user.email}</p>
                 <hr className="dropdown-divider" />
+                <button className="dropdown-customize" onClick={() => { setDropdownOpen(false); onCustomize(); }}>
+                  Customize App
+                </button>
                 <button className="dropdown-signout" onClick={onSignOut}>Sign Out</button>
               </div>
             )}

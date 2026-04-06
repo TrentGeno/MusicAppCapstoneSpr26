@@ -1,9 +1,15 @@
 :root {
     --bg-dark: #0a0a0f;
     --bg-card: #15151f;
+    --main-color: #b967ff;
+    --accent-color: #ff6ec7;
+    --accent-color-secondary: #05d9ff;
     --accent-purple: #b967ff;
     --accent-pink: #ff6ec7;
     --accent-blue: #05d9ff;
+    --accent-purple-rgb: 185,103,255;
+    --accent-pink-rgb: 255,110,199;
+    --accent-blue-rgb: 5,217,255;
     --text-primary: #ffffff;
     --text-secondary: #8b8b9f;
     --glow: rgba(185, 103, 255, 0.3);
@@ -32,9 +38,9 @@ body::before {
     width: 200%;
     height: 200%;
     background: 
-        radial-gradient(circle at 20% 50%, rgba(185, 103, 255, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(5, 217, 255, 0.06) 0%, transparent 50%),
-        radial-gradient(circle at 40% 20%, rgba(255, 110, 199, 0.05) 0%, transparent 50%);
+        radial-gradient(circle at 20% 50%, rgba(var(--accent-purple-rgb), 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(var(--accent-blue-rgb), 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(var(--accent-pink-rgb), 0.05) 0%, transparent 50%);
     animation: drift 20s ease-in-out infinite;
     z-index: 0;
 }
@@ -50,7 +56,11 @@ body::before {
     z-index: 1;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 2rem 8rem; /* bottom padding for fixed soundbar */
+}
+
+body {
+    padding-bottom: 8rem; /* safe fallback for pages without container padding */
 }
 
 /* Header */
@@ -222,8 +232,9 @@ nav a:hover::after {
 /* progress bar inside music card */
 .card-meta {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     position: relative;
 }
 
@@ -295,7 +306,7 @@ nav a:hover::after {
     width: 280px;
     height: 280px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #ff6ec7, #b967ff, #05d9ff);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink), var(--accent-blue));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -406,6 +417,45 @@ nav a:hover::after {
     font-weight: 300;
 }
 
+.card-duration {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 400;
+    margin: 0;
+    text-align: center;
+}
+
+.card-progress {
+    width: 100%;
+    margin: 0.75rem 0;
+}
+
+.card-progress-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.15);
+    outline: none;
+    cursor: pointer;
+}
+
+.card-progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    cursor: pointer;
+}
+
+.card-time-display {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
 .card-meta {
     display: flex;
     flex-direction: column;
@@ -467,12 +517,10 @@ nav a:hover::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  
 }
 
 .play-pause-btn:hover {
   transform: scale(1.15);
-  
 }
 
 .control-btn {
@@ -639,6 +687,37 @@ nav a:hover::after {
   font-size: 0.85rem;
   min-width: 35px;
   text-align: right;
+}
+
+.track-progress {
+  flex: 1 1 100%;
+  margin: 0.5rem 0;
+}
+
+.track-progress-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  cursor: pointer;
+}
+
+.track-progress-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+  cursor: pointer;
+}
+
+.track-time-display {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
 }
 
 .empty-icon {
@@ -834,6 +913,64 @@ nav a:hover::after {
     margin-top: 1.5rem;
 }
 
+.customize-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.color-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.color-input-row input[type="color"] {
+    width: 3rem;
+    height: 3rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 0.5rem;
+}
+
+.color-input-row input[type="text"] {
+    flex: 1;
+}
+
+.theme-preview {
+    margin-top: 1.5rem;
+    border-radius: 18px;
+    padding: 1.25rem;
+    color: white;
+    text-align: center;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.15);
+}
+
+.customize-note {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.dropdown-customize {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    text-align: left;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.dropdown-customize:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
 /* Animations */
 @keyframes fadeIn {
     from {
@@ -938,7 +1075,7 @@ nav a:hover::after {
 .spotify-cover {
     width: 230px;
     height: 230px;
-    background: linear-gradient(135deg, #1db954, #1ed760);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-color), var(--accent-blue));
     display: flex;
     align-items: center;
     justify-content: center;
