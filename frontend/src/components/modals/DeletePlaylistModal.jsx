@@ -27,7 +27,7 @@ export default function DeletePlaylistModal({ playlist, onClose, onDelete }) {
           <button className="btn btn-secondary" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button
             className="btn"
-            style={{ flex: 1, background: '#ff4d4d', color: 'white', border: 'none' }}
+            style={{ flex: 1, background: '#ff4d4d', color: 'var(--text-primary)', border: 'none' }}
             onClick={handleDelete}
           >
             Delete

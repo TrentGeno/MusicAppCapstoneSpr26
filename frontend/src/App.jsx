@@ -37,6 +37,7 @@ export default function App() {
       main: '#b967ff',
       accent1: '#ff6ec7',
       accent2: '#05d9ff',
+      isDarkMode: true,
     };
   });
   const [user, setUser] = useState(() => {
@@ -67,6 +68,22 @@ export default function App() {
     '--accent-pink-rgb': hexToRgb(theme.accent1),
     '--accent-blue-rgb': hexToRgb(theme.accent2),
     '--glow': `rgba(${hexToRgb(theme.main)}, 0.3)`,
+    '--background': theme.isDarkMode ? '#0d0d14' : '#ffffff',
+    '--background-secondary': theme.isDarkMode ? '#1a1a1a' : '#f5f5f5',
+    '--text-primary': theme.isDarkMode ? '#ffffff' : '#000000',
+    '--text-secondary': theme.isDarkMode ? '#b3b3b3' : '#666666',
+    '--border': theme.isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    '--seek-bg': theme.isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+    '--hover-bg': theme.isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+    '--btn-border': theme.isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+    '--btn-border-hover': theme.isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+    '--progress-bg': theme.isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+    '--card-border': theme.isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+    '--h1-gradient': theme.isDarkMode ? `linear-gradient(135deg, #ffffff, ${theme.main})` : `linear-gradient(135deg, #000000, ${theme.main})`,
+    '--bg-alpha': theme.isDarkMode ? '0.08' : '0',
+    '--bg-gradient': theme.isDarkMode ? `radial-gradient(circle at 20% 50%, rgba(${hexToRgb(theme.main)}, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(${hexToRgb(theme.accent1)}, 0.06) 0%, transparent 50%), radial-gradient(circle at 40% 20%, rgba(${hexToRgb(theme.accent2)}, 0.05) 0%, transparent 50%)` : 'transparent',
+    '--vinyl-color-1': theme.isDarkMode ? '#1a1a2e' : '#d0d0d0',
+    '--vinyl-color-2': theme.isDarkMode ? '#15151f' : '#c0c0c0',
   };
 
   const handleThemeSave = (newTheme) => {
@@ -462,7 +479,7 @@ useEffect(() => {
       }, []);
   
   return (
-<div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', ...themeStyles }}>
+<div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
 
       <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
