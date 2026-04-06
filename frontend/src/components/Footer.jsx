@@ -3,8 +3,8 @@ import { NavLink } from 'react-router-dom';
 export default function Footer() {
   return (
     <footer style={{
-      background: '#13131a',
-      borderTop: '1px solid rgba(255,255,255,0.06)',
+      background: 'var(--background-secondary)',
+      borderTop: '1px solid var(--border)',
       padding: '2rem 0',
       marginTop: '4rem'
     }}>

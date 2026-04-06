@@ -167,7 +167,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
         .library-page {
           padding: 2rem 2.5rem;
           min-height: 100vh;
-          color: #fff;
+          color: var(--text-primary);
           font-family: 'Segoe UI', sans-serif;
         }
         .library-header {
@@ -188,7 +188,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           background: rgba(255,255,255,0.1);
           border: none;
           border-radius: 20px;
-          color: #fff;
+          color: var(--text-primary);
           cursor: pointer;
           font-size: 0.9rem;
           font-weight: 600;
@@ -202,14 +202,14 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           border: 1px solid rgba(255,255,255,0.12);
           border-radius: 20px;
           padding: 0.5rem 1.1rem;
-          color: #fff;
+          color: var(--text-primary);
           font-size: 0.9rem;
           width: 220px;
           outline: none;
           transition: border-color 0.2s;
         }
-        .library-search::placeholder { color: rgba(255,255,255,0.4); }
-        .library-search:focus { border-color: rgba(255,255,255,0.4); }
+        .library-search::placeholder { color: var(--text-secondary); }
+        .library-search:focus { border-color: var(--btn-border-hover); }
         .library-filters {
           display: flex;
           gap: 0.5rem;
@@ -222,17 +222,17 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           background: rgba(255,255,255,0.08);
           border: none;
           border-radius: 20px;
-          color: rgba(255,255,255,0.7);
+          color: var(--text-secondary);
           cursor: pointer;
           font-size: 0.85rem;
           font-weight: 500;
           padding: 0.45rem 1.1rem;
           transition: background 0.2s, color 0.2s;
         }
-        .filter-pill:hover { background: rgba(255,255,255,0.15); color: #fff; }
-        .filter-pill.active { background: #fff; color: #000; font-weight: 700; }
+        .filter-pill:hover { background: rgba(255,255,255,0.15); color: var(--text-primary); }
+        .filter-pill.active { background: var(--accent-purple); color: white; font-weight: 700; }
         .library-empty {
-          color: rgba(255,255,255,0.4);
+          color: var(--text-secondary);
           font-size: 0.95rem;
           margin-top: 2rem;
         }
