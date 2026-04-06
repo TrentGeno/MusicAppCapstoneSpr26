@@ -405,30 +405,19 @@ useEffect(() => {
   };
 
   // Toggle repeat mode: none -> all -> one -> none
-  const toggleRepeat = (songId) => {
-    setLibrary(prev =>
-      prev.map(song => {
-        if (song.id === songId) {
-          let nextMode;
-          switch (song.repeatMode) {
-            case 'none':
-              nextMode = 'all';
-              break;
-            case 'all':
-              nextMode = 'one';
-              break;
-            case 'one':
-            default:
-              nextMode = 'none';
-              break;
-          }
-          setGlobalRepeatMode(nextMode);
-          return { ...song, repeatMode: nextMode };
-        }
-        return song;
-      })
-    );
-  }; 
+  const toggleRepeat = () => {
+    setGlobalRepeatMode(prev => {
+      switch (prev) {
+        case 'none':
+          return 'all';
+        case 'all':
+          return 'one';
+        case 'one':
+        default:
+          return 'none';
+      }
+    });
+  };
 
   // Create playlist
   const handleCreatePlaylist = async (e) => {

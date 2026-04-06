@@ -15,7 +15,7 @@ export default function Soundbar({
   seek
 }) {
   const currentSong = library.find(s => s.id === currentSongId);
-  const repeatMode = currentSong?.repeatMode || globalRepeatMode || 'none';
+  const repeatMode = globalRepeatMode || 'none';
   const isPlaying = currentSong?.isPlaying || false;
   const progress = currentSong?.progress || 0;
   const currentTime = currentSong?.currentTime || '0:00';
@@ -113,7 +113,7 @@ export default function Soundbar({
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 52 }}>
           <button
             className="control-btn"
-            onClick={() => toggleRepeat(currentSongId)}
+            onClick={toggleRepeat}
             title={repeatMode === 'one' ? 'Repeat one' : repeatMode === 'all' ? 'Repeat all' : 'No repeat'}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
