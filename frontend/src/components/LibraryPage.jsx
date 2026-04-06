@@ -1,12 +1,16 @@
 import { useState, useMemo } from 'react';
 import SongCard from './SongCard';
+import SongsSection from './SongsSection';
+import ArtistsSection from './ArtistsSection';
+import AlbumsSection from './AlbumsSection';
+import RecentlyAddedSection from './RecentlyAddedSection';
 
-const FILTERS = ['Songs', 'Artists', 'Albums', 'Playlists', 'Recently Added'];
+const FILTERS = ['Songs', 'Artists', 'Albums', 'Recently Added'];
 
-export default function LibraryPage({ library, playlists, togglePlay, currentSongId, fetchLibrary }) {
+export default function LibraryPage({ library, togglePlay, currentSongId, fetchLibrary }) {
   const [activeFilter, setActiveFilter] = useState('Songs');
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState(null); // { type: 'artist'|'album'|'playlist', item }
+  const [selected, setSelected] = useState(null); // { type: 'artist'|'album', item }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -37,8 +41,6 @@ export default function LibraryPage({ library, playlists, togglePlay, currentSon
           a.name.toLowerCase().includes(q) || a.artist?.toLowerCase().includes(q)
         );
       }
-      case 'Playlists':
-        return (playlists || []).filter(p => p.name?.toLowerCase().includes(q));
       case 'Recently Added':
         return [...library]
           .filter(s => s.name?.toLowerCase().includes(q) || s.artist?.toLowerCase().includes(q))
@@ -46,16 +48,12 @@ export default function LibraryPage({ library, playlists, togglePlay, currentSon
       default:
         return library;
     }
-  }, [activeFilter, search, library, playlists]);
+  }, [activeFilter, search, library]);
 
   const drillSongs = useMemo(() => {
     if (!selected) return [];
     if (selected.type === 'artist') return library.filter(s => (s.artist || 'Unknown Artist') === selected.item.name);
     if (selected.type === 'album') return library.filter(s => (s.album || 'Unknown Album') === selected.item.name);
-    if (selected.type === 'playlist') {
-      const ids = selected.item.songIds || [];
-      return ids.length > 0 ? library.filter(s => ids.includes(s.id)) : [];
-    }
     return [];
   }, [selected, library]);
 
@@ -63,6 +61,23 @@ export default function LibraryPage({ library, playlists, togglePlay, currentSon
     setActiveFilter(f);
     setSearch('');
     setSelected(null);
+  };
+
+  const renderSection = () => {
+    const sharedProps = { togglePlay, currentSongId, fetchLibrary };
+
+    switch (activeFilter) {
+      case 'Songs':
+        return <SongsSection songs={filtered} {...sharedProps} />;
+      case 'Artists':
+        return <ArtistsSection artists={filtered} onSelect={setSelected} />;
+      case 'Albums':
+        return <AlbumsSection albums={filtered} onSelect={setSelected} />;
+      case 'Recently Added':
+        return <RecentlyAddedSection songs={filtered} {...sharedProps} />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -112,7 +127,7 @@ export default function LibraryPage({ library, playlists, togglePlay, currentSon
             {selected.item.cover
               ? <img src={selected.item.cover} alt={selected.item.name} className="drill-cover" />
               : <div className="drill-cover-placeholder">
-                  {selected.type === 'artist' ? '🎤' : selected.type === 'album' ? '💿' : '🎵'}
+                  {selected.type === 'artist' ? '🎤' : '💿'}
                 </div>
             }
             <div className="drill-info">
@@ -134,7 +149,7 @@ export default function LibraryPage({ library, playlists, togglePlay, currentSon
                   key={song.id}
                   song={song}
                   togglePlay={togglePlay}
-                  playlists={playlists}
+                  currentSongId={currentSongId}
                   onDelete={fetchLibrary}
                   fetchPlaylists={fetchLibrary}
                 />
@@ -144,58 +159,7 @@ export default function LibraryPage({ library, playlists, togglePlay, currentSon
         </div>
       ) : (
         <div className="library-content">
-          {filtered.length === 0 ? (
-            <p className="library-empty">No {activeFilter.toLowerCase()} found.</p>
-          ) : activeFilter === 'Songs' || activeFilter === 'Recently Added' ? (
-            <div className="song-card-grid">
-              {filtered.map(song => (
-                <SongCard
-                  key={song.id}
-                  song={song}
-                  togglePlay={togglePlay}
-                  playlists={playlists}
-                  onDelete={fetchLibrary}
-                  fetchPlaylists={fetchLibrary}
-                />
-              ))}
-            </div>
-          ) : activeFilter === 'Artists' ? (
-            <div className="group-grid">
-              {filtered.map((item, i) => (
-                <div key={i} className="group-card" onClick={() => setSelected({ type: 'artist', item })}>
-                  {item.cover
-                    ? <img className="group-cover" src={item.cover} alt={item.name} />
-                    : <div className="group-cover-placeholder">🎤</div>
-                  }
-                  <div className="group-name">{item.name}</div>
-                  <div className="group-sub">{item.songs.length} songs</div>
-                </div>
-              ))}
-            </div>
-          ) : activeFilter === 'Albums' ? (
-            <div className="group-grid">
-              {filtered.map((item, i) => (
-                <div key={i} className="group-card" onClick={() => setSelected({ type: 'album', item })}>
-                  {item.cover
-                    ? <img className="group-cover" src={item.cover} alt={item.name} />
-                    : <div className="group-cover-placeholder">💿</div>
-                  }
-                  <div className="group-name">{item.name}</div>
-                  <div className="group-sub">{item.artist} · {item.songs.length} songs</div>
-                </div>
-              ))}
-            </div>
-          ) : activeFilter === 'Playlists' ? (
-            <div className="group-grid">
-              {filtered.map((item, i) => (
-                <div key={i} className="group-card" onClick={() => setSelected({ type: 'playlist', item })}>
-                  <div className="group-cover-placeholder" style={{ background: 'linear-gradient(135deg, #a855f7, #ec4899)' }}>🎵</div>
-                  <div className="group-name">{item.name}</div>
-                  <div className="group-sub">{item.songCount || 0} songs</div>
-                </div>
-              ))}
-            </div>
-          ) : null}
+          {renderSection()}
         </div>
       )}
 
