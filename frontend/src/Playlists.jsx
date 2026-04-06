@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import EditPlaylistModal from './components/modals/EditPlaylistModal';
+import DeletePlaylistModal from './components/modals/DeletePlaylistModal';
 
 export default function Playlist({ togglePlay, library, playlistQueueRef }) {
   const { id } = useParams();
@@ -8,6 +10,10 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState('');
+  const [rowMenuOpen, setRowMenuOpen] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [editData, setEditData] = useState({ name: '', description: '', cover: null });
 
   useEffect(() => {
     fetch(`http://localhost:5000/playlists/${id}`)
@@ -91,7 +97,7 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
         <button className="btn btn-secondary" onClick={() => navigate(-1)}>← Back</button>
       </div>
 
-      <div className="playlist-hero container">
+      <div className="playlist-hero container" style={{ position: 'relative', zIndex: 200 }}>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
           <div style={{ width: 180, height: 180, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 6, flexShrink: 0 }}>
             {(playlist.tracks || []).slice(0, 4).map((t, i) => (
@@ -110,6 +116,7 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
             <div className="playlist-meta">{playlist.description}</div>
 
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              {/* Play button */}
               <button
                 onClick={handlePlayAll}
                 style={{
@@ -125,22 +132,38 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
                 {isAnyPlaying ? '⏸' : '▶'}
               </button>
 
-              <div style={{ position: 'relative' }}>
+              {/* Shuffle placeholder */}
+              <button
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.3rem', opacity: 0.6 }}
+                title="Shuffle (coming soon)"
+              >
+                ⇄
+              </button>
+
+              {/* 3 dot menu */}
+              <div style={{ position: 'relative', zIndex: 50 }}>
                 <button className="btn btn-secondary" onClick={() => setMenuOpen(m => !m)}>⋯</button>
                 {menuOpen && (
-                  <div style={{ position: 'absolute', marginTop: 8, background: 'var(--bg-card)', borderRadius: 8, padding: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 40 }}>
-                    <div style={{ padding: '8px 12px', cursor: 'pointer' }}>Edit Details</div>
-                    <div style={{ padding: '8px 12px', cursor: 'pointer', color: '#ff4d4d' }}>Delete Playlist</div>
+                  <div style={{ position: 'absolute', marginTop: 8, background: 'var(--bg-card)', borderRadius: 8, padding: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 100, minWidth: 160, border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div
+                      style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: 6 }}
+                      onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                      onClick={() => {setEditData({ name: playlist.name, description: playlist.description || '', cover: null }); setEditModalOpen(true); setMenuOpen(false); }}
+                    >
+                      Edit Details
+                    </div>
+                    <div
+                      style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: 6, color: '#ff4d4d' }}
+                      onMouseOver={e => e.currentTarget.style.background = 'rgba(255,77,77,0.1)'}
+                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                      onClick={() => { setDeleteConfirm(true); setMenuOpen(false); }}
+                    >
+                      Delete Playlist
+                    </div>
                   </div>
                 )}
               </div>
-
-              <input
-                placeholder="Filter"
-                value={filter}
-                onChange={e => setFilter(e.target.value)}
-                style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: 'transparent', color: 'var(--text-primary)' }}
-              />
 
               <div style={{ marginLeft: 'auto', color: 'var(--text-secondary)' }}>
                 {playlist.track_count} songs • {totalMinutes} min
@@ -166,46 +189,65 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
           </div>
         ) : (
           filtered.map((t, i) => {
-            const globalIndex = playlist.tracks.indexOf(t);
-            const libraryTrack = library.find(s => s.id === t.track_id);
-            const isActive = libraryTrack?.isPlaying;
-            return (
-              <div
-                key={t.track_id}
-                className="song-row"
-                style={{ display: 'grid', gridTemplateColumns: '40px 3fr 2fr 1fr 60px', alignItems: 'center' }}
-              >
-                <div style={{ textAlign: 'center', color: isActive ? 'var(--accent-purple)' : 'inherit' }}>
-                  {globalIndex + 1}
-                </div>
+          const globalIndex = playlist.tracks.indexOf(t);
+          const libraryTrack = library.find(s => s.id === t.track_id);
+          const isActive = libraryTrack?.isPlaying;
+          return (
+            <div
+              key={t.track_id}
+              className="song-row"
+              onClick={() => handlePlayTrack(t)}
+              style={{ display: 'grid', gridTemplateColumns: '40px 3fr 2fr 1fr 40px', alignItems: 'center', cursor: 'pointer' }}
+            >
+              <div style={{ textAlign: 'center', color: isActive ? 'var(--accent-purple)' : 'inherit' }}>
+                {isActive ? '▶' : globalIndex + 1}
+              </div>
 
-                <div className="song-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {t.cover_art_url
-                    ? <img src={t.cover_art_url} alt="cover" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} />
-                    : <div style={{ width: 40, height: 40, borderRadius: 4, background: 'linear-gradient(135deg, #b967ff, #ff6ec7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600 }}>
-                        {t.title?.charAt(0).toUpperCase()}
-                      </div>
-                  }
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 600, color: isActive ? 'var(--accent-purple)' : 'inherit' }}>{t.title}</p>
-                    <span className="track-sub">{t.artist}</span>
-                  </div>
-                </div>
-
-                <div style={{ opacity: 0.85 }}>{t.album}</div>
-                <div style={{ opacity: 0.7 }}>{formatDuration(t.duration)}</div>
-
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                  <button className="remove-btn" onClick={() => removeTrack(t.track_id)}>✕</button>
-                  <button className="play-btn" onClick={() => handlePlayTrack(t)}>
-                    {isActive ? '❚❚' : '▶'}
-                  </button>
+              <div className="song-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {t.cover_art_url
+                  ? <img src={t.cover_art_url} alt="cover" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} />
+                  : <div style={{ width: 40, height: 40, borderRadius: 4, background: 'linear-gradient(135deg, #b967ff, #ff6ec7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600 }}>
+                      {t.title?.charAt(0).toUpperCase()}
+                    </div>
+                }
+                <div>
+                  <p style={{ margin: 0, fontWeight: 600, color: isActive ? 'var(--accent-purple)' : 'inherit' }}>{t.title}</p>
+                  <span className="track-sub">{t.artist}</span>
                 </div>
               </div>
-            );
-          })
+
+              <div style={{ opacity: 0.85 }}>{t.album}</div>
+              <div style={{ opacity: 0.7 }}>{formatDuration(t.duration)}</div>
+
+              <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
+                <button
+                  onClick={() => setRowMenuOpen(rowMenuOpen === t.track_id ? null : t.track_id)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.1rem', padding: '0 4px' }}
+                >
+                  ⋯
+                </button>
+                {rowMenuOpen === t.track_id && (
+                  <div style={{ position: 'absolute', right: 0, top: '100%', background: 'var(--bg-card)', borderRadius: 8, padding: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 100, minWidth: 140, border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div
+                      style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: 6, color: '#ff4d4d' }}
+                      onMouseOver={e => e.currentTarget.style.background = 'rgba(255,77,77,0.1)'}
+                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                      onClick={() => { removeTrack(t.track_id); setRowMenuOpen(null); }}
+                    >
+                      Remove
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })
         )}
       </div>
+      {editModalOpen && (<EditPlaylistModal playlist={playlist}onClose={() => setEditModalOpen(false)}onSave={(updated) => setPlaylist(prev => ({ ...prev, name: updated.name, description: updated.description }))}/>)}
+
+      {deleteConfirm && (<DeletePlaylistModal playlist={playlist}onClose={() => setDeleteConfirm(false)}onDelete={() => navigate('/playlists')}/>)}
     </div>
+    
   );
 }
