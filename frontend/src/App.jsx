@@ -200,11 +200,11 @@ useEffect(() => {
   const song = library.find(s => s.id === currentSongId);
   const index = library.findIndex(s => s.id === currentSongId);
 
-  if (song && song.audio.currentTime > 10) {
-    // More than 10 seconds in — restart the current song
+  if (song && song.audio.currentTime > 2) {
+    // More than 2 seconds in — restart the current song
     song.audio.currentTime = 0;
   } else {
-    // Within first 10 seconds — go to previous song
+    // Within first 2 seconds — go to previous song
     const prevIndex = (index - 1 + library.length) % library.length;
     if (library[prevIndex]) togglePlay(library[prevIndex].id);
   }
@@ -335,9 +335,19 @@ useEffect(() => {
     setLibrary(prev =>
       prev.map(song => {
         if (song.id === songId) {
-          let nextMode = 'none';
-          if (song.repeatMode === 'none') nextMode = 'all';
-          else if (song.repeatMode === 'all') nextMode = 'one';
+          let nextMode;
+          switch (song.repeatMode) {
+            case 'none':
+              nextMode = 'all';
+              break;
+            case 'all':
+              nextMode = 'one';
+              break;
+            case 'one':
+            default:
+              nextMode = 'none';
+              break;
+          }
           setGlobalRepeatMode(nextMode);
           return { ...song, repeatMode: nextMode };
         }
@@ -395,7 +405,7 @@ useEffect(() => {
 
       <main style={{ flex: 1 }}>
       <Routes>
-      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/" element={<HomePage openModal={openModal}  library={library}  togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} seek={seek} />} />
       <Route path="/library" element={<div style={{padding: '2rem'}}>Library coming soon</div>} />
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
       <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
@@ -448,8 +458,10 @@ useEffect(() => {
         replaySong={replaySong}
         handleSoundbarPlay={handleSoundbarPlay}
         skipSong={skipSong}
+        toggleRepeat={toggleRepeat}
         library={library}
         currentSongId={currentSongId}
+        globalRepeatMode={globalRepeatMode}
         seek={seek}
       />
     )}

@@ -8,11 +8,14 @@ export default function Soundbar({
   replaySong,
   handleSoundbarPlay,
   skipSong,
+  toggleRepeat,
   library,
   currentSongId,
+  globalRepeatMode,
   seek
 }) {
   const currentSong = library.find(s => s.id === currentSongId);
+  const repeatMode = currentSong?.repeatMode || globalRepeatMode || 'none';
   const isPlaying = currentSong?.isPlaying || false;
   const progress = currentSong?.progress || 0;
   const currentTime = currentSong?.currentTime || '0:00';
@@ -107,6 +110,19 @@ export default function Soundbar({
 
       {/* Volume controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 160, flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 52 }}>
+          <button
+            className="control-btn"
+            onClick={() => toggleRepeat(currentSongId)}
+            title={repeatMode === 'one' ? 'Repeat one' : repeatMode === 'all' ? 'Repeat all' : 'No repeat'}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            🔁
+          </button>
+          <span style={{ fontSize: '0.65rem', color: 'white', opacity: 0.85, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {repeatMode === 'all' ? 'All' : repeatMode === 'one' ? 'Current' : 'None'}
+          </span>
+        </div>
         <button onClick={toggleMute} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1rem', opacity: 0.8 }}>
           {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
         </button>
