@@ -9,8 +9,10 @@ import Soundbar from './components/Soundbar';
 import SignInModal from './components/modals/SignInModal';
 import UploadModal from './components/modals/UploadModal';
 import PlaylistModal from './components/modals/PlaylistModal';
+import CustomizeModal from './components/modals/CustomizeModal';
 import Footer from './components/Footer';
 import RecentlyAddedPage from './components/RecentlyAddedPage';
+import LibraryPage from './components/LibraryPage';
 
 
 export default function App() {
@@ -29,18 +31,56 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
   const playlistQueueRef = useRef([]);
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('appTheme');
+    return saved ? JSON.parse(saved) : {
+      main: '#b967ff',
+      accent1: '#ff6ec7',
+      accent2: '#05d9ff',
+    };
+  });
   const [user, setUser] = useState(() => {
-  const saved = localStorage.getItem('user');
-  return saved ? JSON.parse(saved) : null;
-});
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const hexToRgb = (hex) => {
+    const cleaned = hex.replace('#', '').length === 3
+      ? hex.replace('#', '').split('').map((c) => c + c).join('')
+      : hex.replace('#', '');
+    const num = parseInt(cleaned, 16);
+    return [
+      (num >> 16) & 255,
+      (num >> 8) & 255,
+      num & 255,
+    ].join(',');
+  };
+
+  const themeStyles = {
+    '--main-color': theme.main,
+    '--accent-color': theme.accent1,
+    '--accent-color-secondary': theme.accent2,
+    '--accent-purple': theme.main,
+    '--accent-pink': theme.accent1,
+    '--accent-blue': theme.accent2,
+    '--accent-purple-rgb': hexToRgb(theme.main),
+    '--accent-pink-rgb': hexToRgb(theme.accent1),
+    '--accent-blue-rgb': hexToRgb(theme.accent2),
+    '--glow': `rgba(${hexToRgb(theme.main)}, 0.3)`,
+  };
+
+  const handleThemeSave = (newTheme) => {
+    setTheme(newTheme);
+    localStorage.setItem('appTheme', JSON.stringify(newTheme));
+  };
   
     // Fetch all tracks from backend and wire up Audio objects
   const fetchLibrary = useCallback(() => {
     const gradients = [
-      'linear-gradient(135deg, #a855f7, #ec4899)',
-      'linear-gradient(135deg, #ff6ec7, #ff9a56)',
-      'linear-gradient(135deg, #05d9ff, #7b68ee)',
-      'linear-gradient(135deg, #ffd700, #ff6347)',
+      `linear-gradient(135deg, ${theme.main}, ${theme.accent1})`,
+      `linear-gradient(135deg, ${theme.accent1}, ${theme.accent2})`,
+      `linear-gradient(135deg, ${theme.accent2}, ${theme.main})`,
+      `linear-gradient(135deg, ${theme.main}, ${theme.accent2})`,
     ];
 
     fetch('http://localhost:5000/tracks')
@@ -147,7 +187,7 @@ export default function App() {
         setLibrary(loadedSongs);
       })
       .catch(err => console.error('Failed to load tracks:', err));
-  }, [globalRepeatMode]);
+  }, [globalRepeatMode, theme]);
 
 useEffect(() => {
   fetchPlaylists();
@@ -155,7 +195,7 @@ useEffect(() => {
 
 useEffect(() => {
   fetchLibrary();
-}, []);
+}, [fetchLibrary]);
 
   // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
@@ -200,11 +240,11 @@ useEffect(() => {
   const song = library.find(s => s.id === currentSongId);
   const index = library.findIndex(s => s.id === currentSongId);
 
-  if (song && song.audio.currentTime > 10) {
-    // More than 10 seconds in — restart the current song
+  if (song && song.audio.currentTime > 2) {
+    // More than 2 seconds in — restart the current song
     song.audio.currentTime = 0;
   } else {
-    // Within first 10 seconds — go to previous song
+    // Within first 2 seconds — go to previous song
     const prevIndex = (index - 1 + library.length) % library.length;
     if (library[prevIndex]) togglePlay(library[prevIndex].id);
   }
@@ -274,26 +314,60 @@ useEffect(() => {
   };
 
   const handleUpload = async () => {
-  if (uploadedFiles.length === 0) return;
+    if (uploadedFiles.length === 0 || isUploading) return;
 
-  const formData = new FormData();
-  uploadedFiles.forEach(file => formData.append('file', file));
+    const formData = new FormData();
+    uploadedFiles.forEach(file => formData.append('file', file));
 
-  try {
-    const response = await fetch('http://localhost:5000/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    const initialProgress = uploadedFiles.reduce((acc, file) => {
+      acc[getFileKey(file)] = 0;
+      return acc;
+    }, {});
 
-    if (!response.ok) throw new Error('Upload failed');
+    setUploadProgress(initialProgress);
+    setIsUploading(true);
 
-    fetchLibrary();
-    setUploadedFiles([]);
-    closeModal();
-  } catch (error) {
-    console.error('Upload error:', error);
-    alert('Server error: Make sure your Flask backend is running on port 5000');
-  }
+    try {
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'http://localhost:5000/upload');
+
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(prev => {
+            const next = { ...prev };
+            Object.keys(next).forEach(key => {
+              next[key] = percent;
+            });
+            return next;
+          });
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.onabort = () => reject(new Error('Upload aborted by the user'));
+
+        xhr.send(formData);
+      });
+
+      fetchLibrary();
+      setUploadedFiles([]);
+      closeModal();
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Server error: Make sure your Flask backend is running on port 5000');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress({});
+    }
   };
 
   // Toggle play/pause and ensure only one track plays at a time
@@ -331,20 +405,19 @@ useEffect(() => {
   };
 
   // Toggle repeat mode: none -> all -> one -> none
-  const toggleRepeat = (songId) => {
-    setLibrary(prev =>
-      prev.map(song => {
-        if (song.id === songId) {
-          let nextMode = 'none';
-          if (song.repeatMode === 'none') nextMode = 'all';
-          else if (song.repeatMode === 'all') nextMode = 'one';
-          setGlobalRepeatMode(nextMode);
-          return { ...song, repeatMode: nextMode };
-        }
-        return song;
-      })
-    );
-  }; 
+  const toggleRepeat = () => {
+    setGlobalRepeatMode(prev => {
+      switch (prev) {
+        case 'none':
+          return 'all';
+        case 'all':
+          return 'one';
+        case 'one':
+        default:
+          return 'none';
+      }
+    });
+  };
 
   // Create playlist
   const handleCreatePlaylist = async (e) => {
@@ -389,18 +462,18 @@ useEffect(() => {
       }, []);
   
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+<div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', ...themeStyles }}>
 
-      <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut}/>
+      <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
       <main style={{ flex: 1 }}>
       <Routes>
       <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-      <Route path="/library" element={<div style={{padding: '2rem'}}>Library coming soon</div>} />
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
       <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
       <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} />} />
       <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/LibraryPage" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId}  fetchLibrary={fetchLibrary}/>}/>
       </Routes>
       </main>
      {activeModal === "playlist" && (
@@ -420,6 +493,13 @@ useEffect(() => {
             localStorage.setItem('user', JSON.stringify(userData));
             closeModal();
           }}
+          closeModal={closeModal}
+        />
+      )}
+      {activeModal === 'customize' && (
+        <CustomizeModal
+          theme={theme}
+          onSave={handleThemeSave}
           closeModal={closeModal}
         />
       )}
@@ -448,8 +528,10 @@ useEffect(() => {
         replaySong={replaySong}
         handleSoundbarPlay={handleSoundbarPlay}
         skipSong={skipSong}
+        toggleRepeat={toggleRepeat}
         library={library}
         currentSongId={currentSongId}
+        globalRepeatMode={globalRepeatMode}
         seek={seek}
       />
     )}

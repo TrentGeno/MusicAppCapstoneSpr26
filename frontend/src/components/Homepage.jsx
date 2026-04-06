@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AddToPlaylistModal from './modals/AddToPlaylistModal';
 import SongCard from './SongCard';
 
-export default function HomePage({ openModal, library, togglePlay, playlists, fetchLibrary }) {
+export default function HomePage({ openModal, library, togglePlay, seek, playlists, fetchLibrary }) {
   const navigate = useNavigate();
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [addToPlaylistSong, setAddToPlaylistSong] = useState(null);
@@ -55,7 +55,13 @@ export default function HomePage({ openModal, library, togglePlay, playlists, fe
             </div>
           ) : (
             library.slice(0, 5).map(song => (
-            <SongCard key={song.id}song={song}togglePlay={togglePlay}playlists={playlists}onDelete={fetchLibrary}/>
+              <SongCard
+                key={song.id}
+                song={song}
+                togglePlay={togglePlay}
+                playlists={playlists}
+                onDelete={fetchLibrary}
+              />
             ))
           )}
         </div>

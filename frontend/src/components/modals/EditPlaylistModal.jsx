@@ -47,7 +47,7 @@ export default function EditPlaylistModal({ playlist, onClose, onSave }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
               width: 80, height: 80, borderRadius: 8, overflow: 'hidden',
-              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+              background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-color))',
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
             }}>
               {editData.cover

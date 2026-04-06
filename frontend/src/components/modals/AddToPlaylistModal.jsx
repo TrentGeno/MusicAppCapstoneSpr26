@@ -38,7 +38,7 @@ export default function AddToPlaylistModal({ song, playlists, onClose, fetchPlay
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem', padding: '0.75rem', background: 'rgba(255,255,255,0.04)', borderRadius: 10 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 6, background: song.gradient || 'linear-gradient(135deg, #b967ff, #ff6ec7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 6, background: song.gradient || 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, flexShrink: 0 }}>
             {song.name?.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -58,7 +58,7 @@ export default function AddToPlaylistModal({ song, playlists, onClose, fetchPlay
                 style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '0.75rem 1rem', borderRadius: 10,
-                  background: added === playlist.id ? 'rgba(185,103,255,0.2)' : 'rgba(255,255,255,0.04)',
+                  background: added === playlist.id ? 'rgba(var(--accent-purple-rgb),0.2)' : 'rgba(255,255,255,0.04)',
                   border: `1px solid ${added === playlist.id ? 'var(--accent-purple)' : 'rgba(255,255,255,0.06)'}`,
                   cursor: adding ? 'wait' : 'pointer',
                   transition: 'all 0.2s ease'
