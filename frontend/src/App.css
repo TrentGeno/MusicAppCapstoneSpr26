@@ -33,7 +33,7 @@ body {
 body::before {
     display: none;
 }
-}
+
 
 @keyframes drift {
     0%, 100% { transform: translate(0, 0) rotate(0deg); }
