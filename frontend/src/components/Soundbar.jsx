@@ -41,7 +41,7 @@ export default function Soundbar({
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 200, flexShrink: 0 }}>
         <div style={{
           width: 40, height: 40, borderRadius: 6, flexShrink: 0,
-          background: currentSong?.gradient || 'linear-gradient(135deg, #b967ff, #ff6ec7)',
+          background: currentSong?.gradient || 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'white', fontWeight: 600, fontSize: '1rem', overflow: 'hidden'
         }}>

@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
 
-export default function Navbar({ user, onSignIn, onSignOut }) {
+export default function Navbar({ user, onSignIn, onSignOut, onCustomize }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
@@ -29,6 +29,9 @@ export default function Navbar({ user, onSignIn, onSignOut }) {
               <div className="user-dropdown">
                 <p className="dropdown-email">{user.email}</p>
                 <hr className="dropdown-divider" />
+                <button className="dropdown-customize" onClick={() => { setDropdownOpen(false); onCustomize(); }}>
+                  Customize App
+                </button>
                 <button className="dropdown-signout" onClick={onSignOut}>Sign Out</button>
               </div>
             )}
