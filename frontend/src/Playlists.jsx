@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import EditPlaylistModal from './components/modals/EditPlaylistModal';
 import DeletePlaylistModal from './components/modals/DeletePlaylistModal';
 
-export default function Playlist({ togglePlay, library, playlistQueueRef }) {
+export default function Playlist({ togglePlay, library, playlistQueueRef, fetchPlaylists }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [playlist, setPlaylist] = useState(null);
@@ -245,8 +245,8 @@ return (
         )}
       </div>
       {editModalOpen && (<EditPlaylistModal playlist={playlist}onClose={() => setEditModalOpen(false)}onSave={(updated) => setPlaylist(prev => ({ ...prev, name: updated.name, description: updated.description }))}/>)}
-
-      {deleteConfirm && (<DeletePlaylistModal playlist={playlist}onClose={() => setDeleteConfirm(false)}onDelete={() => navigate('/playlists')}/>)}
+      
+      {deleteConfirm && (<DeletePlaylistModal playlist={playlist}onClose={() => setDeleteConfirm(false)}onDelete={() => {fetchPlaylists();navigate('/playlists');}}/>)}
     </div>
     
   );
