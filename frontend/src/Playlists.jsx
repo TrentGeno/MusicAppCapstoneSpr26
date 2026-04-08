@@ -122,7 +122,7 @@ return (
                 style={{
                   width: 56, height: 56, borderRadius: '50%',
                   background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))',
-                  border: 'none', color: 'white', fontSize: '1.2rem', cursor: 'pointer',
+                  border: 'none', color: 'var(--text-primary)', fontSize: '1.2rem', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 10px 30px var(--glow)', transition: 'transform 0.2s ease'
                 }}
@@ -144,7 +144,7 @@ return (
               <div style={{ position: 'relative', zIndex: 50 }}>
                 <button className="btn btn-secondary" onClick={() => setMenuOpen(m => !m)}>⋯</button>
                 {menuOpen && (
-                  <div style={{ position: 'absolute', marginTop: 8, background: 'var(--bg-card)', borderRadius: 8, padding: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 100, minWidth: 160, border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ position: 'absolute', marginTop: 8, background: 'var(--background-secondary)', borderRadius: 8, padding: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 100, minWidth: 160, border: '1px solid var(--border)' }}>
                     <div
                       style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: 6 }}
                       onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
@@ -206,7 +206,7 @@ return (
               <div className="song-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {t.cover_art_url
                   ? <img src={t.cover_art_url} alt="cover" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} />
-                  : <div style={{ width: 40, height: 40, borderRadius: 4, background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600 }}>
+                  : <div style={{ width: 40, height: 40, borderRadius: 4, background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontWeight: 600 }}>
                       {t.title?.charAt(0).toUpperCase()}
                     </div>
                 }
@@ -227,7 +227,7 @@ return (
                   ⋯
                 </button>
                 {rowMenuOpen === t.track_id && (
-                  <div style={{ position: 'absolute', right: 0, top: '100%', background: 'var(--bg-card)', borderRadius: 8, padding: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 100, minWidth: 140, border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ position: 'absolute', right: 0, top: '100%', background: 'var(--background-secondary)', borderRadius: 8, padding: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 100, minWidth: 140, border: '1px solid var(--border)' }}>
                     <div
                       style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: 6, color: '#ff4d4d' }}
                       onMouseOver={e => e.currentTarget.style.background = 'rgba(255,77,77,0.1)'}
