@@ -4,6 +4,7 @@ export default function CustomizeModal({ theme, onSave, closeModal }) {
   const [mainColor, setMainColor] = useState(theme.main);
   const [accent1, setAccent1] = useState(theme.accent1);
   const [accent2, setAccent2] = useState(theme.accent2);
+  const [isDarkMode, setIsDarkMode] = useState(theme.isDarkMode !== undefined ? theme.isDarkMode : true);
 
   return (
     <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
@@ -65,6 +66,21 @@ export default function CustomizeModal({ theme, onSave, closeModal }) {
               />
             </div>
           </div>
+
+          <div className="form-group">
+            <label>Theme Mode</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={isDarkMode}
+                  onChange={(e) => setIsDarkMode(e.target.checked)}
+                />
+                <span className="slider"></span>
+              </label>
+              <span>{isDarkMode ? 'Dark' : 'Light'}</span>
+            </div>
+          </div>
         </div>
 
         <div className="theme-preview" style={{ background: `linear-gradient(135deg, ${mainColor}, ${accent1}, ${accent2})` }}>
@@ -77,7 +93,7 @@ export default function CustomizeModal({ theme, onSave, closeModal }) {
           <button
             className="btn btn-primary"
             onClick={() => {
-              onSave({ main: mainColor, accent1, accent2 });
+              onSave({ main: mainColor, accent1, accent2, isDarkMode });
               closeModal();
             }}
           >

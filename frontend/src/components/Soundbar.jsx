@@ -28,8 +28,8 @@ export default function Soundbar({
       left: 0,
       right: 0,
       height: '72px',
-      background: '#0d0d14',
-      borderTop: '1px solid rgba(255,255,255,0.08)',
+      background: 'var(--background)',
+      borderTop: '1px solid var(--border)',
       display: 'flex',
       alignItems: 'center',
       padding: '0 2rem',
@@ -51,7 +51,7 @@ export default function Soundbar({
           }
         </div>
         <div style={{ overflow: 'hidden' }}>
-          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'white' }}>
+          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>
             {currentSong?.name || 'No song playing'}
           </p>
           <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -64,7 +64,7 @@ export default function Soundbar({
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
         {/* Playback buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={replaySong} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.1rem', opacity: 0.8, transition: 'opacity 0.2s' }}
+          <button onClick={replaySong} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '1.1rem', opacity: 0.8, transition: 'opacity 0.2s' }}
             onMouseOver={e => e.currentTarget.style.opacity = 1}
             onMouseOut={e => e.currentTarget.style.opacity = 0.8}
           >⏮</button>
@@ -73,7 +73,7 @@ export default function Soundbar({
             onClick={handleSoundbarPlay}
             style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: 'white', border: 'none', color: '#0d0d14',
+              background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))', border: 'none', color: 'white',
               cursor: 'pointer', fontSize: '0.9rem',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'transform 0.2s'
@@ -84,7 +84,7 @@ export default function Soundbar({
             {isPlaying ? '⏸' : '▶'}
           </button>
 
-          <button onClick={skipSong} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.1rem', opacity: 0.8, transition: 'opacity 0.2s' }}
+          <button onClick={skipSong} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '1.1rem', opacity: 0.8, transition: 'opacity 0.2s' }}
             onMouseOver={e => e.currentTarget.style.opacity = 1}
             onMouseOut={e => e.currentTarget.style.opacity = 0.8}
           >⏭</button>
@@ -94,7 +94,7 @@ export default function Soundbar({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', maxWidth: 500 }}>
           <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', flexShrink: 0 }}>{currentTime}</span>
           <div
-            style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 2, cursor: 'pointer', position: 'relative' }}
+            style={{ flex: 1, height: 4, background: 'var(--seek-bg)', borderRadius: 2, cursor: 'pointer', position: 'relative' }}
             onClick={e => {
               if (!currentSongId) return;
               const rect = e.currentTarget.getBoundingClientRect();
