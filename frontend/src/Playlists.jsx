@@ -90,8 +90,8 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
   const isAnyPlaying = (playlist.tracks || []).some(t =>
     library.find(s => s.id === t.track_id)?.isPlaying
   );
-
-  return (
+console.log(playlist);
+return (
     <div className="playlist-page">
       <div style={{ padding: '1rem 2rem', position: 'relative', zIndex: 10 }}>
         <button className="btn btn-secondary" onClick={() => navigate(-1)}>← Back</button>
