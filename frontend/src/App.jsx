@@ -483,7 +483,7 @@ useEffect(() => {
 
       <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
-      <main style={{ flex: 1 }}>
+      <main style={{ flex: 1, paddingBottom: currentSongId ? '72px' : '0' }}>
       <Routes>
       <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
