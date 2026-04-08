@@ -81,7 +81,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
   };
 
   return (
-    <div className="library-page">
+    <div className="library-page" style={{ minHeight: 'unset' }}>
       {/* Header */}
       <div className="library-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -166,7 +166,6 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
       <style>{`
         .library-page {
           padding: 2rem 2.5rem;
-          min-height: 100vh;
           color: var(--text-primary);
           font-family: 'Segoe UI', sans-serif;
         }
