@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import EditPlaylistModal from './components/modals/EditPlaylistModal';
 import DeletePlaylistModal from './components/modals/DeletePlaylistModal';
 
-export default function Playlist({ togglePlay, library, playlistQueueRef }) {
+export default function Playlist({ togglePlay, library, playlistQueueRef, fetchPlaylists }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [playlist, setPlaylist] = useState(null);
@@ -90,8 +90,8 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
   const isAnyPlaying = (playlist.tracks || []).some(t =>
     library.find(s => s.id === t.track_id)?.isPlaying
   );
-
-  return (
+console.log(playlist);
+return (
     <div className="playlist-page">
       <div style={{ padding: '1rem 2rem', position: 'relative', zIndex: 10 }}>
         <button className="btn btn-secondary" onClick={() => navigate(-1)}>← Back</button>
@@ -245,8 +245,8 @@ export default function Playlist({ togglePlay, library, playlistQueueRef }) {
         )}
       </div>
       {editModalOpen && (<EditPlaylistModal playlist={playlist}onClose={() => setEditModalOpen(false)}onSave={(updated) => setPlaylist(prev => ({ ...prev, name: updated.name, description: updated.description }))}/>)}
-
-      {deleteConfirm && (<DeletePlaylistModal playlist={playlist}onClose={() => setDeleteConfirm(false)}onDelete={() => navigate('/playlists')}/>)}
+      
+      {deleteConfirm && (<DeletePlaylistModal playlist={playlist}onClose={() => setDeleteConfirm(false)}onDelete={() => {fetchPlaylists();navigate('/playlists');}}/>)}
     </div>
     
   );
