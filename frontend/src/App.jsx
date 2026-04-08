@@ -488,7 +488,7 @@ useEffect(() => {
       <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
       <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
-      <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} />} />
+      <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/LibraryPage" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId}  fetchLibrary={fetchLibrary}/>}/>
       </Routes>
