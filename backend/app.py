@@ -17,12 +17,23 @@ import requests
 from urllib.parse import quote
 from sqlalchemy import text as sa_text
 
+import sys
+
+# Works in both dev and when packaged with PyInstaller
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 app = Flask(__name__)
-init_db(app)
+init_db(app, base_dir=BASE_DIR)  # 👈 pass BASE_DIR here
 CORS(app, origins=["http://localhost:5000", "http://localhost:5173"])
 
-UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), "uploads")
-COVER_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), "covers")
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+COVER_FOLDER = os.path.join(BASE_DIR, "covers")
+
+
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(COVER_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER

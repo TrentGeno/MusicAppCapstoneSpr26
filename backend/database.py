@@ -6,9 +6,10 @@ from sqlalchemy.engine import Engine
 
 db = SQLAlchemy()
 
-def init_db(app: Flask):
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    instance_dir = os.path.join(basedir, 'instance')
+def init_db(app: Flask, base_dir=None):
+    if base_dir is None:
+        base_dir = os.path.abspath(os.path.dirname(__file__))
+    instance_dir = os.path.join(base_dir, 'instance')
     os.makedirs(instance_dir, exist_ok=True)
 
     db_path = os.path.join(instance_dir, 'music_app.db')

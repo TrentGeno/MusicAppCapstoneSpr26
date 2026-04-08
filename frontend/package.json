@@ -2,12 +2,14 @@
   "name": "frontend",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "main": "electron.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 -d 1000 && electron .\"",
+    "electron:build": "vite build && electron-builder"
   },
   "dependencies": {
     "jsmediatags": "^3.9.7",
@@ -20,10 +22,34 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.2.2",
+    "concurrently": "^9.0.0",
+    "electron": "^31.0.0",
+    "electron-builder": "^25.0.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "com.offbeat.app",
+    "productName": "OffBeat",
+    "files": [
+      "dist/**/*",
+      "electron.js"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend/dist/backend.exe",
+        "to": "backend.exe"
+      }
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis"
+    }
   }
 }
