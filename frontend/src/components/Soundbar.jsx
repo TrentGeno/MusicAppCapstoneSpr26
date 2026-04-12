@@ -38,7 +38,7 @@ export default function Soundbar({
     }}>
 
       {/* Song info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 200, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
         <div style={{
           width: 40, height: 40, borderRadius: 6, flexShrink: 0,
           background: currentSong?.gradient || 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))',
@@ -61,7 +61,7 @@ export default function Soundbar({
       </div>
 
       {/* Center — controls + seek bar */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+      <div style={{ flex: '0 0 500px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
         {/* Playback buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button onClick={replaySong} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '1.1rem', opacity: 0.8, transition: 'opacity 0.2s' }}
@@ -109,7 +109,7 @@ export default function Soundbar({
       </div>
 
       {/* Volume controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 160, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 52 }}>
           <button
             className="control-btn"
