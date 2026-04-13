@@ -390,6 +390,7 @@ export default function App() {
       alert('Failed to create playlist. Please try again.');
     }
   };
+  };
 
   const handleCloseSoundbar = () => {
     const song = library.find(s => s.id === currentSongId);
@@ -398,11 +399,59 @@ export default function App() {
     setLibrary(prev => prev.map(s => ({ ...s, isPlaying: false })));
   };
 
+const fetchPlaylists = useCallback(() => {
+  fetch('http://localhost:5000/playlists')
+    .then(res => res.json())
+    .then(data => {
+      setPlaylists(data.map(p => ({
+        id: p.playlist_id,
+        name: p.name,
+        description: p.description,
+        songCount: p.track_count,
+        coverUrls: p.cover_urls || []
+      })));
+    })
+    .catch(err => console.error('Failed to load playlists:', err));
+}, []);
+  
+
+const handleCreatePlaylist = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await fetch('http://localhost:5000/playlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(playlistData)
+    });
+    await response.json();
+    await fetchPlaylists(); // 👈 fetch fresh from backend instead of building locally
+    setPlaylistData({ name: '', description: '' });
+    closeModal();
+  } catch (error) {
+    console.error('Playlist creation error:', error);
+    alert('Failed to create playlist. Please try again.');
+  }
+};
+
+useEffect(() => {
+  fetchLibrary();
+  fetchPlaylists();
+}, [fetchLibrary, fetchPlaylists]);
+
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
       <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
       <main style={{ flex: 1, paddingBottom: currentSongId ? '72px' : '0' }}>
+      <Routes>
+      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
+      <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
+      <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists}/>} />
+      </Routes>
         <Routes>
           <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
           <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
@@ -467,4 +516,3 @@ export default function App() {
       <Footer />
     </div>
   );
-}
