@@ -13,6 +13,7 @@ import CustomizeModal from './components/modals/CustomizeModal';
 import Footer from './components/Footer';
 import RecentlyAddedPage from './components/RecentlyAddedPage';
 import LibraryPage from './components/LibraryPage';
+import ArtistsPage from './components/ArtistsPage';
 
 
 export default function App() {
@@ -487,7 +488,7 @@ useEffect(() => {
       <Routes>
       <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
-      <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
+      <Route path="/artists" element={<ArtistsPage />} />
       <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} />} />
