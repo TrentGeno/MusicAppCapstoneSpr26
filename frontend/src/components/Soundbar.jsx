@@ -110,7 +110,7 @@ export default function Soundbar({
 
       {/* Volume controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-end' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 52 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: 72, flexShrink: 0 }}>
           <button
             className="control-btn"
             onClick={toggleRepeat}
@@ -119,7 +119,7 @@ export default function Soundbar({
           >
             🔁
           </button>
-          <span style={{ fontSize: '0.65rem', color: 'white', opacity: 0.85, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <span style={{ fontSize: '0.65rem', color: 'white', opacity: 0.85, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em', width: '100%', lineHeight: 1 }}>
             {repeatMode === 'all' ? 'All' : repeatMode === 'one' ? 'Current' : 'None'}
           </span>
         </div>
