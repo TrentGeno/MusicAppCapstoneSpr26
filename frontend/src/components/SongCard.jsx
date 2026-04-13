@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AddToPlaylistModal from './modals/AddToPlaylistModal';
 
-export default function SongCard({ song, togglePlay, playlists, onDelete, fetchPlaylists }) {
+export default function SongCard({ song, togglePlay, playlists, onDelete, fetchPlaylists, cardId, isHighlighted = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [addToPlaylist, setAddToPlaylist] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -9,7 +9,8 @@ export default function SongCard({ song, togglePlay, playlists, onDelete, fetchP
   return (
     <>
       <div
-        className="music-card"
+        id={cardId}
+        className={`music-card ${isHighlighted ? 'song-card-highlight' : ''}`}
         onClick={() => togglePlay(song.id)}
         style={{ cursor: 'pointer', padding: '0.75rem 0.75rem 0.5rem 0.75rem', position: 'relative', minWidth: 0 }}
       >

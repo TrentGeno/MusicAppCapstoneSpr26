@@ -362,6 +362,11 @@ nav a:hover::after {
     border-color: rgba(185, 103, 255, 0.3);
 }
 
+.song-card-highlight {
+  border-color: rgba(185, 103, 255, 0.8);
+  box-shadow: 0 0 0 2px rgba(185, 103, 255, 0.25), 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
 .card-cover {
     width: 100%;
     aspect-ratio: 1;
@@ -1834,6 +1839,61 @@ nav a:hover::after {
   font-size: 0.86rem;
 }
 
+.artist-discography-feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.artist-retry-btn {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.artist-retry-btn:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+.discography-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.discography-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.discography-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.discography-group-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.discography-group-date {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .discography-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -1844,17 +1904,27 @@ nav a:hover::after {
   border-radius: 10px;
   padding: 0.65rem 0.75rem;
   border: 1px solid rgba(255,255,255,0.08);
+  width: 100%;
+  text-align: left;
+  color: var(--text-primary);
+  background: transparent;
 }
 
 .discography-item.owned {
   background: rgba(185, 103, 255, 0.28);
   border-color: rgba(185, 103, 255, 0.6);
+  cursor: pointer;
 }
 
 .discography-item.missing {
   background: rgba(255,255,255,0.06);
   border-color: rgba(255,255,255,0.12);
   opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.discography-item:disabled {
+  pointer-events: auto;
 }
 
 .discography-title {
@@ -1866,12 +1936,9 @@ nav a:hover::after {
 }
 
 .discography-sub {
-  margin-top: 0.2rem;
+  margin-top: 0.25rem;
+  color: var(--text-secondary);
   font-size: 0.72rem;
-  color: rgba(255,255,255,0.7);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 @media (max-width: 900px) {

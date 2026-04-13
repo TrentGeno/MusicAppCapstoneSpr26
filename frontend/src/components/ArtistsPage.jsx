@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import ArtistDetailsModal from './modals/ArtistDetailsModal';
+
+const API_BASE_URL = 'http://localhost:5000';
 
 export default function ArtistsPage() {
   const [artists, setArtists] = useState([]);
@@ -8,14 +10,15 @@ export default function ArtistsPage() {
   const [search, setSearch] = useState('');
   const [selectedArtist, setSelectedArtist] = useState(null);
 
-  useEffect(() => {
+  const loadArtists = useCallback(() => {
     let active = true;
+    const controller = new AbortController();
 
-    const loadArtists = async () => {
+    void (async () => {
+      try {
       setLoading(true);
       setError('');
-      try {
-        const response = await fetch('http://localhost:5000/artists');
+        const response = await fetch(`${API_BASE_URL}/artists`, { signal: controller.signal });
         if (!response.ok) {
           throw new Error(`Failed to load artists (${response.status})`);
         }
@@ -24,7 +27,7 @@ export default function ArtistsPage() {
           setArtists(Array.isArray(payload) ? payload : []);
         }
       } catch (err) {
-        if (active) {
+        if (active && err.name !== 'AbortError') {
           setError(err.message || 'Unable to load artists right now.');
         }
       } finally {
@@ -32,14 +35,17 @@ export default function ArtistsPage() {
           setLoading(false);
         }
       }
-    };
-
-    loadArtists();
+    })();
 
     return () => {
       active = false;
+      controller.abort();
     };
   }, []);
+
+  useEffect(() => {
+    return loadArtists();
+  }, [loadArtists]);
 
   const filteredArtists = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -67,13 +73,20 @@ export default function ArtistsPage() {
       </div>
 
       {loading && <p className="library-empty">Loading artist cards...</p>}
-      {!loading && error && <p className="library-empty">{error}</p>}
+      {!loading && error && (
+        <div className="artist-discography-feedback">
+          <p className="library-empty">{error}</p>
+          <button type="button" className="artist-retry-btn" onClick={() => { loadArtists(); }}>
+            Retry
+          </button>
+        </div>
+      )}
 
       {!loading && !error && (
         <div className="artist-cards-grid">
           {filteredArtists.map((artist) => (
             <button
-              key={artist.mbid || artist.name}
+              key={artist.wikipedia_title || artist.mbid || artist.name}
               type="button"
               className="artist-card"
               onClick={() => setSelectedArtist(artist)}

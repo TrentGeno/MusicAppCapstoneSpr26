@@ -1,26 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const API_BASE_URL = 'http://localhost:5000';
 
 export default function ArtistDetailsModal({ artist, onClose }) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [discography, setDiscography] = useState([]);
   const [isDiscographyLoading, setIsDiscographyLoading] = useState(false);
   const [discographyError, setDiscographyError] = useState('');
+  const [hasLoadedDiscography, setHasLoadedDiscography] = useState(false);
 
-  useEffect(() => {
-    if (activeTab !== 'discography' || discography.length > 0 || isDiscographyLoading) {
-      return;
-    }
-
+  const loadDiscography = useCallback(() => {
     let active = true;
+    setIsDiscographyLoading(true);
+    setDiscographyError('');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const loadDiscography = async () => {
-      setIsDiscographyLoading(true);
-      setDiscographyError('');
-
+    void (async () => {
       try {
         const mbid = artist.mbid || 'unknown';
-        const url = `http://localhost:5000/artists/${encodeURIComponent(mbid)}/discography?name=${encodeURIComponent(artist.name || '')}`;
-        const response = await fetch(url);
+        const pageTitle = artist.wikipedia_title || '';
+        const url = `${API_BASE_URL}/artists/${encodeURIComponent(mbid)}/discography?name=${encodeURIComponent(artist.name || '')}&pageTitle=${encodeURIComponent(pageTitle)}`;
+        const response = await fetch(url, { signal: controller.signal });
         if (!response.ok) {
           throw new Error(`Failed to load discography (${response.status})`);
         }
@@ -28,24 +31,76 @@ export default function ArtistDetailsModal({ artist, onClose }) {
         const payload = await response.json();
         if (active) {
           setDiscography(Array.isArray(payload.items) ? payload.items : []);
+          setHasLoadedDiscography(true);
         }
       } catch (err) {
         if (active) {
-          setDiscographyError(err.message || 'Unable to load discography right now.');
+          setDiscography([]);
+          setDiscographyError(err.name === 'AbortError' ? 'Discography request timed out. Please try again.' : (err.message || 'Unable to load discography right now.'));
         }
       } finally {
+        clearTimeout(timeoutId);
         if (active) {
           setIsDiscographyLoading(false);
         }
       }
-    };
-
-    loadDiscography();
+    })();
 
     return () => {
       active = false;
+      controller.abort();
+      clearTimeout(timeoutId);
     };
-  }, [activeTab, artist.mbid, artist.name, discography.length, isDiscographyLoading]);
+  }, [artist.mbid, artist.name, artist.wikipedia_title]);
+
+  useEffect(() => {
+    setDiscography([]);
+    setDiscographyError('');
+    setIsDiscographyLoading(false);
+    setHasLoadedDiscography(false);
+  }, [artist.mbid, artist.name, artist.wikipedia_title]);
+
+  useEffect(() => {
+    if (activeTab !== 'discography' || hasLoadedDiscography) {
+      return undefined;
+    }
+
+    return loadDiscography();
+  }, [activeTab, hasLoadedDiscography, loadDiscography]);
+
+  const groupedDiscography = useMemo(() => {
+    const groups = [];
+    const groupMap = new Map();
+
+    discography.forEach((item, index) => {
+      const groupName = item.group_name || 'Singles';
+      const groupReleaseYear = item.group_release_year ?? item.release_year ?? null;
+      const groupKey = groupName;
+
+      if (!groupMap.has(groupKey)) {
+        const nextGroup = {
+          key: groupKey,
+          name: groupName,
+          releaseYear: groupReleaseYear,
+          items: [],
+        };
+        groupMap.set(groupKey, nextGroup);
+        groups.push(nextGroup);
+      }
+
+      const group = groupMap.get(groupKey);
+      if (group.releaseYear == null || (groupReleaseYear != null && groupReleaseYear < group.releaseYear)) {
+        group.releaseYear = groupReleaseYear;
+      }
+
+      group.items.push({
+        ...item,
+        itemKey: `${item.title}-${index}`,
+      });
+    });
+
+    return groups;
+  }, [discography]);
 
   return (
     <div className="modal" onClick={onClose}>
@@ -99,7 +154,7 @@ export default function ArtistDetailsModal({ artist, onClose }) {
             </div>
 
             <p className="artist-bio">
-              {artist.bio || 'No biography is available from Spotify metadata for this artist.'}
+              {artist.bio || 'No biography was found from public artist metadata sources for this artist.'}
             </p>
           </div>
         )}
@@ -107,19 +162,59 @@ export default function ArtistDetailsModal({ artist, onClose }) {
         {activeTab === 'discography' && (
           <div className="artist-tab-panel">
             {isDiscographyLoading && <p className="library-empty">Loading discography...</p>}
-            {!isDiscographyLoading && discographyError && <p className="library-empty">{discographyError}</p>}
+            {!isDiscographyLoading && discographyError && (
+              <div className="artist-discography-feedback">
+                <p className="library-empty">{discographyError}</p>
+                <button type="button" className="artist-retry-btn" onClick={() => {
+                  setDiscographyError('');
+                  setHasLoadedDiscography(false);
+                  loadDiscography();
+                }}>
+                  Retry
+                </button>
+              </div>
+            )}
 
-            {!isDiscographyLoading && !discographyError && (
-              <div className="discography-list">
-                {discography.map((item, index) => (
-                  <div
-                    key={`${item.title}-${index}`}
-                    className={`discography-item ${item.owned ? 'owned' : 'missing'}`}
-                    title={item.owned ? 'In your library' : 'Not in your library'}
-                  >
-                    <div className="discography-title">{item.title}</div>
-                    <div className="discography-sub">{item.release || 'Single / Unknown Release'}</div>
-                  </div>
+            {!isDiscographyLoading && !discographyError && discography.length === 0 && (
+              <div className="artist-discography-feedback">
+                <p className="library-empty">No discography was found for this artist.</p>
+                <button type="button" className="artist-retry-btn" onClick={() => {
+                  setHasLoadedDiscography(false);
+                  loadDiscography();
+                }}>
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!isDiscographyLoading && !discographyError && discography.length > 0 && (
+              <div className="discography-groups">
+                {groupedDiscography.map((group) => (
+                  <section key={group.key} className="discography-group">
+                    <div className="discography-group-header">
+                      <div className="discography-group-title">{group.name}</div>
+                      <div className="discography-group-date">{group.releaseYear || 'Year unknown'}</div>
+                    </div>
+                    <div className="discography-list">
+                      {group.items.map((item) => (
+                        <button
+                          key={item.itemKey}
+                          type="button"
+                          className={`discography-item ${item.owned ? 'owned' : 'missing'}`}
+                          title={item.owned ? 'In your library' : 'Not in your library'}
+                          disabled={!item.owned}
+                          onClick={() => {
+                            if (!item.owned || !item.track_id) return;
+                            navigate(`/library?focusSongId=${encodeURIComponent(item.track_id)}`);
+                            onClose();
+                          }}
+                        >
+                          <div className="discography-title">{item.title}</div>
+                          <div className="discography-sub">{item.release_year || 'Year unknown'}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             )}
