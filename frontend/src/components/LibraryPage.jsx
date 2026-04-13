@@ -7,7 +7,8 @@ import RecentlyAddedSection from './RecentlyAddedSection';
 
 const FILTERS = ['Songs', 'Artists', 'Albums', 'Recently Added'];
 
-export default function LibraryPage({ library, togglePlay, currentSongId, fetchLibrary }) {
+// Destructure the new props
+export default function LibraryPage({ library, togglePlay, currentSongId, fetchLibrary, playlists, fetchPlaylists }) {
   const [activeFilter, setActiveFilter] = useState('Songs');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null); // { type: 'artist'|'album', item }
@@ -64,7 +65,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
   };
 
   const renderSection = () => {
-    const sharedProps = { togglePlay, currentSongId, fetchLibrary };
+    const sharedProps = { togglePlay, currentSongId, fetchLibrary, playlists, fetchPlaylists };
 
     switch (activeFilter) {
       case 'Songs':
@@ -150,8 +151,9 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
                   song={song}
                   togglePlay={togglePlay}
                   currentSongId={currentSongId}
+                  playlists={playlists}
                   onDelete={fetchLibrary}
-                  fetchPlaylists={fetchLibrary}
+                  fetchPlaylists={fetchPlaylists}
                 />
               ))}
             </div>
