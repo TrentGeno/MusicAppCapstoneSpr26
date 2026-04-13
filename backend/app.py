@@ -1,5 +1,8 @@
 import os
 import uuid
+import re
+import time
+from datetime import date
 from flask import Flask, request, send_from_directory, jsonify
 from flask_cors import CORS
 from database import db, init_db, find_or_create_user
@@ -41,6 +44,10 @@ app.config["COVER_FOLDER"] = COVER_FOLDER
 
 # Initialize MusicBrainz
 musicbrainzngs.set_useragent("MusicApp", "1.0", "https://github.com/yourusername/musicapp")
+
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
+_spotify_token_cache = {"access_token": None, "expires_at": 0}
 
 def extract_metadata(filepath):
     """Extract metadata from audio file using mutagen"""
@@ -215,6 +222,181 @@ def save_cover_art(cover_data, artist, album):
 
     except Exception as e:
         print(f"Error saving cover art: {e}")
+        return None
+
+
+def normalize_artist_name(name):
+    if not name:
+        return "Unknown Artist"
+    text = str(name)
+    for token in [",", " feat.", " ft.", " featuring ", " & ", " x "]:
+        if token in text:
+            text = text.split(token)[0]
+            break
+    text = text.strip()
+    return text or "Unknown Artist"
+
+
+def normalize_title_for_match(title):
+    if not title:
+        return ""
+    return "".join(ch.lower() for ch in str(title) if ch.isalnum())
+
+
+def split_artist_credits(artist_text):
+    if not artist_text:
+        return []
+
+    parts = re.split(r"\s*(?:,|feat\.|ft\.|featuring|&| x )\s*", str(artist_text), flags=re.IGNORECASE)
+    cleaned = [normalize_artist_name(p) for p in parts if p and p.strip()]
+
+    seen = set()
+    unique = []
+    for name in cleaned:
+        key = name.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(name)
+
+    return unique
+
+
+def compute_age(life_span):
+    begin = (life_span or {}).get("begin")
+    end = (life_span or {}).get("end")
+    if not begin or len(begin) < 4:
+        return None
+    try:
+        birth_year = int(begin[:4])
+    except ValueError:
+        return None
+
+    try:
+        end_year = int(end[:4]) if end and len(end) >= 4 else date.today().year
+    except ValueError:
+        end_year = date.today().year
+
+    age = end_year - birth_year
+    return age if age >= 0 else None
+
+
+def fetch_wikipedia_profile(wikipedia_url):
+    if not wikipedia_url:
+        return {"bio": None, "image_url": None}
+
+    try:
+        page_title = wikipedia_url.rsplit("/", 1)[-1]
+        summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{quote(page_title)}"
+        response = requests.get(summary_url, timeout=8)
+        if response.status_code != 200:
+            return {"bio": None, "image_url": None}
+        payload = response.json()
+        return {
+            "bio": payload.get("extract"),
+            "image_url": (payload.get("thumbnail") or {}).get("source"),
+        }
+    except Exception:
+        return {"bio": None, "image_url": None}
+
+
+def fetch_artist_profile_from_musicbrainz(artist_name):
+    # Kept function name for compatibility, but now uses Spotify Web API.
+    try:
+        token = get_spotify_access_token()
+        if not token:
+            return None
+
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(
+            "https://api.spotify.com/v1/search",
+            headers=headers,
+            params={"q": artist_name, "type": "artist", "limit": 1},
+            timeout=10,
+        )
+        if response.status_code != 200:
+            return None
+
+        artists = (((response.json() or {}).get("artists") or {}).get("items") or [])
+        if not artists:
+            return None
+
+        artist = artists[0]
+        images = artist.get("images") or []
+        image_url = images[0].get("url") if images else None
+
+        return {
+            "mbid": artist.get("id"),
+            "name": artist.get("name") or artist_name,
+            "age": None,
+            "bio": None,
+            "image_url": image_url,
+            "country": None,
+            "type": None,
+            "disambiguation": None,
+            "begin_date": None,
+            "end_date": None,
+            "tags": (artist.get("genres") or [])[:5],
+            "popularity": artist.get("popularity"),
+            "followers": ((artist.get("followers") or {}).get("total")),
+        }
+    except Exception as e:
+        print(f"Spotify artist lookup failed for '{artist_name}': {e}")
+        return None
+
+
+def get_spotify_access_token():
+    if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
+        print("Spotify credentials missing: set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET")
+        return None
+
+    now = int(time.time())
+    cached = _spotify_token_cache.get("access_token")
+    expires_at = int(_spotify_token_cache.get("expires_at") or 0)
+    if cached and expires_at - 60 > now:
+        return cached
+
+    try:
+        response = requests.post(
+            "https://accounts.spotify.com/api/token",
+            data={"grant_type": "client_credentials"},
+            auth=(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET),
+            timeout=10,
+        )
+        if response.status_code != 200:
+            print(f"Spotify token request failed with status {response.status_code}")
+            return None
+
+        payload = response.json() or {}
+        access_token = payload.get("access_token")
+        expires_in = int(payload.get("expires_in") or 3600)
+        if not access_token:
+            return None
+
+        _spotify_token_cache["access_token"] = access_token
+        _spotify_token_cache["expires_at"] = now + expires_in
+        return access_token
+    except Exception as e:
+        print(f"Spotify token request error: {e}")
+        return None
+
+
+def spotify_get(url, params=None):
+    token = get_spotify_access_token()
+    if not token:
+        return None
+
+    try:
+        response = requests.get(
+            url,
+            headers={"Authorization": f"Bearer {token}"},
+            params=params or {},
+            timeout=10,
+        )
+        if response.status_code != 200:
+            return None
+        return response.json()
+    except Exception:
         return None
 
 
@@ -463,6 +645,166 @@ def get_tracks():
         }
         for t in tracks
     ])
+
+
+@app.route("/artists", methods=["GET"])
+def get_artists():
+    tracks = Track.query.filter_by(user_id=1).all()
+    artist_groups = {}
+    feature_counts = {}
+
+    for track in tracks:
+        credits = split_artist_credits(track.artist)
+        normalized = credits[0] if credits else "Unknown Artist"
+        key = normalized.lower()
+
+        if key not in artist_groups:
+            artist_groups[key] = {
+                "name": normalized,
+                "display_name": normalized,
+                "track_count": 0,
+                "owned_titles": [],
+                "local_image_url": None,
+            }
+
+        group = artist_groups[key]
+        group["track_count"] += 1
+        if track.title:
+            group["owned_titles"].append(track.title)
+
+        if not group["local_image_url"] and track.cover_art_path:
+            cover_full_path = os.path.join(app.config["COVER_FOLDER"], track.cover_art_path)
+            if os.path.exists(cover_full_path):
+                group["local_image_url"] = f"http://localhost:5000/covers/{quote(track.cover_art_path)}"
+
+        for featured_artist in credits[1:]:
+            f_key = featured_artist.lower()
+            feature_counts[f_key] = feature_counts.get(f_key, 0) + 1
+
+    payload = []
+    for _, info in artist_groups.items():
+        mb_profile = fetch_artist_profile_from_musicbrainz(info["name"]) or {}
+        payload.append({
+            "mbid": mb_profile.get("mbid"),
+            "name": mb_profile.get("name") or info["display_name"],
+            "age": mb_profile.get("age"),
+            "bio": mb_profile.get("bio"),
+            "image_url": mb_profile.get("image_url") or info.get("local_image_url"),
+            "birth_date": mb_profile.get("begin_date"),
+            "death_date": mb_profile.get("end_date"),
+            "track_count": info["track_count"],
+            "feature_count": feature_counts.get(info["name"].lower(), 0),
+            "owned_titles": sorted(list(set(info["owned_titles"]))),
+        })
+
+    payload.sort(key=lambda a: (-a.get("track_count", 0), a.get("name") or ""))
+    return jsonify(payload), 200
+
+
+@app.route("/artists/<artist_mbid>/discography", methods=["GET"])
+def get_artist_discography(artist_mbid):
+    artist_name = request.args.get("name", "")
+    if not artist_name:
+        return jsonify({"error": "Missing required query param: name"}), 400
+
+    normalized_artist = normalize_artist_name(artist_name)
+    artist_tracks = Track.query.filter(
+        Track.user_id == 1,
+        Track.artist.isnot(None),
+        Track.artist.ilike(f"{normalized_artist}%")
+    ).all()
+
+    owned_titles = {normalize_title_for_match(t.title) for t in artist_tracks if t.title}
+    items = []
+    seen = set()
+
+    # Pull albums/singles from Spotify and expand to track lists.
+    if artist_mbid and artist_mbid != "unknown":
+        try:
+            albums = []
+            offset = 0
+            while len(albums) < 200:
+                payload = spotify_get(
+                    f"https://api.spotify.com/v1/artists/{artist_mbid}/albums",
+                    {
+                        "include_groups": "album,single",
+                        "limit": 50,
+                        "offset": offset,
+                        "market": "US",
+                    },
+                )
+                if not payload:
+                    break
+
+                page_items = payload.get("items") or []
+                if not page_items:
+                    break
+
+                albums.extend(page_items)
+                if len(page_items) < 50:
+                    break
+                offset += 50
+
+            album_seen = set()
+            unique_albums = []
+            for album in albums:
+                aid = album.get("id")
+                if not aid or aid in album_seen:
+                    continue
+                album_seen.add(aid)
+                unique_albums.append(album)
+
+            for album in unique_albums[:120]:
+                album_id = album.get("id")
+                if not album_id:
+                    continue
+
+                tracks_payload = spotify_get(
+                    f"https://api.spotify.com/v1/albums/{album_id}/tracks",
+                    {"limit": 50, "market": "US"},
+                )
+                if not tracks_payload:
+                    continue
+
+                for tr in tracks_payload.get("items") or []:
+                    title = tr.get("name")
+                    if not title:
+                        continue
+
+                    key = normalize_title_for_match(title)
+                    if not key or key in seen:
+                        continue
+                    seen.add(key)
+
+                    items.append({
+                        "title": title,
+                        "release": album.get("name"),
+                        "owned": key in owned_titles,
+                    })
+        except Exception as e:
+            print(f"Spotify discography lookup failed for {artist_mbid}: {e}")
+
+    # If MusicBrainz yields nothing, fall back to the local artist tracks.
+    if not items:
+        for track in artist_tracks:
+            if not track.title:
+                continue
+            key = normalize_title_for_match(track.title)
+            if key in seen:
+                continue
+            seen.add(key)
+            items.append({
+                "title": track.title,
+                "release": track.album,
+                "owned": True,
+            })
+
+    items.sort(key=lambda item: (not item.get("owned", False), (item.get("title") or "").lower()))
+
+    return jsonify({
+        "artist": normalized_artist,
+        "items": items,
+    }), 200
 
 @app.route("/playlists/<int:playlist_id>", methods=["PUT"])
 def update_playlist(playlist_id):
