@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';import '../App.css';
+import { useState, useMemo } from 'react';
+import '../App.css';
 import SongCard from './SongCard';
 import SongsSection from './SongsSection';
 import ArtistsSection from './ArtistsSection';
@@ -7,11 +8,11 @@ import RecentlyAddedSection from './RecentlyAddedSection';
 
 const FILTERS = ['Songs', 'Artists', 'Albums', 'Recently Added'];
 
-// Destructure the new props
 export default function LibraryPage({ library, togglePlay, currentSongId, fetchLibrary, playlists, fetchPlaylists }) {
   const [activeFilter, setActiveFilter] = useState('Songs');
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState(null); // { type: 'artist'|'album', item }
+  const [selected, setSelected] = useState(null);
+  const [viewMode, setViewMode] = useState('grid'); // ← moved up here
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -65,7 +66,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
   };
 
   const renderSection = () => {
-    const sharedProps = { togglePlay, currentSongId, fetchLibrary, playlists, fetchPlaylists };
+    const sharedProps = { togglePlay, currentSongId, fetchLibrary, playlists, fetchPlaylists, viewMode };
 
     switch (activeFilter) {
       case 'Songs':
@@ -95,14 +96,32 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
             {selected ? selected.item.name : 'Your Library'}
           </h1>
         </div>
+
+        {/* Search + view toggle — hidden when drilled in */}
         {!selected && (
-          <input
-            className="library-search"
-            type="text"
-            placeholder="Search in library..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              className="library-search"
+              type="text"
+              placeholder="Search in library..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <button
+              className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Grid view"
+            >
+              ⊞
+            </button>
+            <button
+              className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setViewMode('list')}
+              title="List view"
+            >
+              ☰
+            </button>
+          </div>
         )}
       </div>
 
@@ -144,7 +163,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           {drillSongs.length === 0 ? (
             <p className="library-empty">No songs found.</p>
           ) : (
-            <div className="song-card-grid">
+            <div className={viewMode === 'grid' ? 'song-card-grid' : 'song-card-list'}>
               {drillSongs.map(song => (
                 <SongCard
                   key={song.id}
@@ -154,6 +173,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
                   playlists={playlists}
                   onDelete={fetchLibrary}
                   fetchPlaylists={fetchPlaylists}
+                  viewMode={viewMode}  // ← also pass here for drill-down
                 />
               ))}
             </div>
@@ -164,8 +184,6 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           {renderSection()}
         </div>
       )}
-
-      
     </div>
   );
 }
