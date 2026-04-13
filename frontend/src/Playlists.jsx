@@ -37,7 +37,9 @@ function handleShuffle() {
   const queue = newShuffled ? shuffle(ids) : ids;
   playlistQueueRef.current = queue;
 
-  if (queue.length > 0) togglePlay(queue[0]);
+  if (newShuffled && queue.length > 0) {
+    togglePlay(queue[0]);
+  }
 }
 
   useEffect(() => {
