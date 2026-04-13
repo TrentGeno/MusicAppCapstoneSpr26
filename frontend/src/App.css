@@ -1672,3 +1672,41 @@ nav a:hover::after {
   color: rgba(255,255,255,0.5);
   margin: 0 0 0.2rem;
 }
+
+.song-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.song-card--list {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+}
+
+.song-card--list .song-thumb-sm {
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.view-toggle-btn {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--btn-border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.view-toggle-btn.active {
+  background: var(--main-color);
+  color: white;
+  border-color: var(--main-color);
+}

@@ -1,10 +1,10 @@
 import SongCard from './SongCard';
 
-export default function SongsSection({ songs, togglePlay, currentSongId, playlists, fetchLibrary }) {
+export default function SongsSection({ songs, togglePlay, currentSongId, playlists, fetchLibrary, fetchPlaylists, viewMode }) {
   if (songs.length === 0) return <p className="library-empty">No songs found.</p>;
 
   return (
-    <div className="song-card-grid">
+    <div className={viewMode === 'grid' ? 'song-card-grid' : 'song-card-list'}>
       {songs.map(song => (
         <SongCard
           key={song.id}
@@ -13,7 +13,8 @@ export default function SongsSection({ songs, togglePlay, currentSongId, playlis
           currentSongId={currentSongId}
           playlists={playlists}
           onDelete={fetchLibrary}
-          fetchPlaylists={fetchLibrary}
+          fetchPlaylists={fetchPlaylists}
+          viewMode={viewMode}   // ← pass to card for layout changes
         />
       ))}
     </div>
