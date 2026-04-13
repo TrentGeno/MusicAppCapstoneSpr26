@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';import './App.css';
-import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HomePage from './components/Homepage';
