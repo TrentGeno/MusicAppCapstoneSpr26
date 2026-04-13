@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';import '../App.css';
+import { useEffect, useMemo, useState } from 'react';import '../App.css';
+import { useSearchParams } from 'react-router-dom';
 import SongCard from './SongCard';
 import SongsSection from './SongsSection';
 import ArtistsSection from './ArtistsSection';
@@ -8,9 +9,15 @@ import RecentlyAddedSection from './RecentlyAddedSection';
 const FILTERS = ['Songs', 'Artists', 'Albums', 'Recently Added'];
 
 export default function LibraryPage({ library, togglePlay, currentSongId, fetchLibrary }) {
+  const [searchParams] = useSearchParams();
   const [activeFilter, setActiveFilter] = useState('Songs');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null); // { type: 'artist'|'album', item }
+  const focusedSongId = searchParams.get('focusSongId');
+  const focusedSong = useMemo(() => {
+    if (!focusedSongId) return null;
+    return library.find((song) => String(song.id) === String(focusedSongId)) || null;
+  }, [focusedSongId, library]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -57,6 +64,25 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
     return [];
   }, [selected, library]);
 
+  useEffect(() => {
+    if (!focusedSong) return;
+    setActiveFilter('Songs');
+    setSelected(null);
+    setSearch(focusedSong.name || '');
+  }, [focusedSong]);
+
+  useEffect(() => {
+    if (!focusedSongId) return;
+    const frame = window.requestAnimationFrame(() => {
+      const element = document.getElementById(`library-song-${focusedSongId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusedSongId, filtered, activeFilter]);
+
   const handleFilterChange = (f) => {
     setActiveFilter(f);
     setSearch('');
@@ -68,7 +94,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
 
     switch (activeFilter) {
       case 'Songs':
-        return <SongsSection songs={filtered} {...sharedProps} />;
+        return <SongsSection songs={filtered} focusedSongId={focusedSongId} {...sharedProps} />;
       case 'Artists':
         return <ArtistsSection artists={filtered} onSelect={setSelected} />;
       case 'Albums':
@@ -148,6 +174,8 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
                 <SongCard
                   key={song.id}
                   song={song}
+                  cardId={`library-song-${song.id}`}
+                  isHighlighted={String(song.id) === String(focusedSongId)}
                   togglePlay={togglePlay}
                   currentSongId={currentSongId}
                   onDelete={fetchLibrary}

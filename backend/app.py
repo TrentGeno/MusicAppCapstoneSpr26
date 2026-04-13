@@ -2,6 +2,7 @@ import os
 import uuid
 import re
 import time
+from html import unescape
 from datetime import date
 from flask import Flask, request, send_from_directory, jsonify
 from flask_cors import CORS
@@ -19,6 +20,7 @@ import musicbrainzngs
 import requests
 from urllib.parse import quote
 from sqlalchemy import text as sa_text
+from wikipedia_discography import extract_main_discography_article_title, extract_song_discography_entries, is_discography_section, is_song_discography_section
 
 import sys
 
@@ -45,9 +47,144 @@ app.config["COVER_FOLDER"] = COVER_FOLDER
 # Initialize MusicBrainz
 musicbrainzngs.set_useragent("MusicApp", "1.0", "https://github.com/yourusername/musicapp")
 
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
-_spotify_token_cache = {"access_token": None, "expires_at": 0}
+MUSICBRAINZ_BASE_URL = "https://musicbrainz.org/ws/2"
+MUSICBRAINZ_USER_AGENT = "MusicApp/1.0 (https://github.com/yourusername/musicapp)"
+_artist_profile_cache = {}
+_artist_discography_cache = {}
+
+
+def _cache_get(cache, key):
+    entry = cache.get(key)
+    if not entry:
+        return None
+    if time.time() >= entry.get("expires_at", 0):
+        cache.pop(key, None)
+        return None
+    return entry.get("value")
+
+
+def _cache_set(cache, key, value, ttl_seconds=3600):
+    cache[key] = {
+        "value": value,
+        "expires_at": time.time() + ttl_seconds,
+    }
+
+
+def musicbrainz_get_json(path, params=None, timeout=6):
+    query = {"fmt": "json"}
+    if params:
+        query.update(params)
+
+    try:
+        response = requests.get(
+            f"{MUSICBRAINZ_BASE_URL}{path}",
+            params=query,
+            headers={"User-Agent": MUSICBRAINZ_USER_AGENT},
+            timeout=timeout,
+        )
+        if response.status_code != 200:
+            return None
+        return response.json()
+    except requests.RequestException:
+        return None
+
+
+def wikipedia_get_json(params, timeout=6):
+    query = {
+        "format": "json",
+        "origin": "*",
+    }
+    query.update(params)
+
+    try:
+        response = requests.get(
+            "https://en.wikipedia.org/w/api.php",
+            params=query,
+            headers={"User-Agent": MUSICBRAINZ_USER_AGENT},
+            timeout=timeout,
+        )
+        if response.status_code != 200:
+            return None
+        return response.json()
+    except requests.RequestException:
+        return None
+
+
+def fetch_wikidata_entity(entity_id, timeout=6):
+    if not entity_id:
+        return None
+
+    try:
+        response = requests.get(
+            f"https://www.wikidata.org/wiki/Special:EntityData/{quote(entity_id)}.json",
+            headers={"User-Agent": MUSICBRAINZ_USER_AGENT},
+            timeout=timeout,
+        )
+        if response.status_code != 200:
+            return None
+        return response.json()
+    except requests.RequestException:
+        return None
+
+
+def extract_wikidata_date(entity, claim_id):
+    if not entity:
+        return None
+    claims = ((entity.get("claims") or {}).get(claim_id) or [])
+    if not claims:
+        return None
+
+    try:
+        time_value = claims[0]["mainsnak"]["datavalue"]["value"]["time"]
+        cleaned = str(time_value).lstrip("+").split("T", 1)[0]
+        return cleaned if cleaned else None
+    except Exception:
+        return None
+
+
+def strip_html_text(text):
+    cleaned = re.sub(r"<sup[^>]*>.*?</sup>", "", text, flags=re.IGNORECASE | re.DOTALL)
+    cleaned = re.sub(r"<[^>]+>", " ", cleaned)
+    cleaned = unescape(cleaned)
+    cleaned = re.sub(r"\[[^\]]*\]", "", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return cleaned.strip()
+
+
+def choose_best_wikipedia_artist_result(artist_name, results):
+    normalized_artist = normalize_artist_name(artist_name).lower()
+    best = None
+    best_score = float("-inf")
+
+    for result in results[:5]:
+        title = (result.get("title") or "").strip()
+        snippet = strip_html_text(result.get("snippet") or "").lower()
+        title_lower = title.lower()
+        score = 0
+
+        if title_lower == normalized_artist:
+            score += 10
+        elif normalized_artist in title_lower:
+            score += 5
+
+        for keyword in ["musician", "singer", "rapper", "band", "artist", "songwriter", "record producer"]:
+            if keyword in snippet:
+                score += 4
+
+        for bad_keyword in ["album", "song", "soundtrack", "single", "tour", "film"]:
+            if bad_keyword in title_lower:
+                score -= 8
+            if bad_keyword in snippet:
+                score -= 4
+
+        if "may refer to" in snippet:
+            score -= 10
+
+        if score > best_score:
+            best = result
+            best_score = score
+
+    return best or (results[0] if results else None)
 
 def extract_metadata(filepath):
     """Extract metadata from audio file using mutagen"""
@@ -243,6 +380,61 @@ def normalize_title_for_match(title):
     return "".join(ch.lower() for ch in str(title) if ch.isalnum())
 
 
+def normalize_track_field(value):
+    return normalize_title_for_match(value or "")
+
+
+def build_track_signature(title, artist=None, album=None, duration=None):
+    normalized_duration = int(duration or 0)
+    return (
+        normalize_track_field(title),
+        normalize_track_field(artist),
+        normalize_track_field(album),
+        normalized_duration,
+    )
+
+
+def is_duplicate_track(existing_track, title, artist=None, album=None, duration=None):
+    existing_signature = build_track_signature(
+        existing_track.title,
+        existing_track.artist,
+        existing_track.album,
+        existing_track.duration,
+    )
+    candidate_signature = build_track_signature(title, artist, album, duration)
+
+    if existing_signature[:3] != candidate_signature[:3]:
+        return False
+
+    existing_duration = existing_signature[3]
+    candidate_duration = candidate_signature[3]
+    if existing_duration and candidate_duration:
+        return abs(existing_duration - candidate_duration) <= 2
+
+    return True
+
+
+def find_duplicate_track(user_id, title, artist=None, album=None, duration=None):
+    if not title:
+        return None
+
+    candidates = Track.query.filter_by(user_id=user_id, title=title).all()
+    for candidate in candidates:
+        if is_duplicate_track(candidate, title, artist, album, duration):
+            return candidate
+
+    # Fallback for inconsistent title formatting in metadata.
+    normalized_title = normalize_track_field(title)
+    additional_candidates = Track.query.filter_by(user_id=user_id).all()
+    for candidate in additional_candidates:
+        if normalize_track_field(candidate.title) != normalized_title:
+            continue
+        if is_duplicate_track(candidate, title, artist, album, duration):
+            return candidate
+
+    return None
+
+
 def split_artist_credits(artist_text):
     if not artist_text:
         return []
@@ -300,106 +492,201 @@ def fetch_wikipedia_profile(wikipedia_url):
         return {"bio": None, "image_url": None}
 
 
-def fetch_artist_profile_from_musicbrainz(artist_name):
-    # Kept function name for compatibility, but now uses Spotify Web API.
+def fetch_wikipedia_profile_by_name(artist_name):
+    if not artist_name:
+        return {"bio": None, "image_url": None}
+
     try:
-        token = get_spotify_access_token()
-        if not token:
-            return None
-
-        headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(
-            "https://api.spotify.com/v1/search",
-            headers=headers,
-            params={"q": artist_name, "type": "artist", "limit": 1},
-            timeout=10,
+        search_response = requests.get(
+            "https://en.wikipedia.org/w/api.php",
+            params={
+                "action": "query",
+                "list": "search",
+                "srsearch": f"{artist_name} musician",
+                "format": "json",
+                "utf8": 1,
+                "srlimit": 1,
+            },
+            timeout=8,
         )
-        if response.status_code != 200:
-            return None
+        if search_response.status_code != 200:
+            return {"bio": None, "image_url": None}
 
-        artists = (((response.json() or {}).get("artists") or {}).get("items") or [])
-        if not artists:
-            return None
+        search_payload = search_response.json() or {}
+        matches = ((search_payload.get("query") or {}).get("search") or [])
+        if not matches:
+            return {"bio": None, "image_url": None}
 
-        artist = artists[0]
-        images = artist.get("images") or []
-        image_url = images[0].get("url") if images else None
+        page_title = matches[0].get("title")
+        if not page_title:
+            return {"bio": None, "image_url": None}
+
+        summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{quote(page_title)}"
+        summary_response = requests.get(summary_url, timeout=8)
+        if summary_response.status_code != 200:
+            return {"bio": None, "image_url": None}
+
+        summary_payload = summary_response.json() or {}
+        image = (summary_payload.get("originalimage") or {}).get("source")
+        if not image:
+            image = (summary_payload.get("thumbnail") or {}).get("source")
 
         return {
-            "mbid": artist.get("id"),
-            "name": artist.get("name") or artist_name,
-            "age": None,
-            "bio": None,
+            "bio": summary_payload.get("extract"),
+            "image_url": image,
+        }
+    except Exception:
+        return {"bio": None, "image_url": None}
+
+
+def fetch_artist_profile_from_musicbrainz(artist_name):
+    # Keyless artist profile lookup using Wikipedia + Wikidata.
+    try:
+        cache_key = normalize_artist_name(artist_name).lower()
+        cached = _cache_get(_artist_profile_cache, cache_key)
+        if cached is not None:
+            return cached
+
+        search = wikipedia_get_json(
+            {
+                "action": "query",
+                "list": "search",
+                "srsearch": f'"{normalize_artist_name(artist_name)}" musician',
+                "srlimit": 5,
+            },
+            timeout=6,
+        )
+        results = ((search or {}).get("query") or {}).get("search") or []
+        if not results:
+            return None
+
+        selected_result = choose_best_wikipedia_artist_result(artist_name, results)
+        page_title = (selected_result or {}).get("title")
+        if not page_title:
+            return None
+
+        summary_response = requests.get(
+            f"https://en.wikipedia.org/api/rest_v1/page/summary/{quote(page_title)}",
+            headers={"User-Agent": MUSICBRAINZ_USER_AGENT},
+            timeout=6,
+        )
+        if summary_response.status_code != 200:
+            return None
+        summary = summary_response.json() or {}
+
+        page_info = wikipedia_get_json(
+            {
+                "action": "query",
+                "prop": "pageprops",
+                "titles": page_title,
+            },
+            timeout=6,
+        )
+        pages = ((page_info or {}).get("query") or {}).get("pages") or {}
+        page = next(iter(pages.values()), {}) if pages else {}
+        wikidata_id = ((page.get("pageprops") or {}).get("wikibase_item"))
+        entity_payload = fetch_wikidata_entity(wikidata_id, timeout=6)
+        entity = ((entity_payload or {}).get("entities") or {}).get(wikidata_id) if wikidata_id else None
+
+        birth_date = extract_wikidata_date(entity, "P569")
+        death_date = extract_wikidata_date(entity, "P570")
+        age = compute_age({"begin": birth_date, "end": death_date})
+
+        image_url = (summary.get("originalimage") or {}).get("source")
+        if not image_url:
+            image_url = (summary.get("thumbnail") or {}).get("source")
+
+        tags = []
+        description = summary.get("description")
+        if description:
+            tags.append(description)
+
+        profile = {
+            "mbid": page_title,
+            "wikipedia_title": page_title,
+            "name": summary.get("title") or page_title or artist_name,
+            "age": age,
+            "bio": summary.get("extract"),
             "image_url": image_url,
             "country": None,
             "type": None,
-            "disambiguation": None,
-            "begin_date": None,
-            "end_date": None,
-            "tags": (artist.get("genres") or [])[:5],
-            "popularity": artist.get("popularity"),
-            "followers": ((artist.get("followers") or {}).get("total")),
+            "disambiguation": description,
+            "begin_date": birth_date,
+            "end_date": death_date,
+            "tags": tags,
         }
+        _cache_set(_artist_profile_cache, cache_key, profile, ttl_seconds=3600)
+        return profile
     except Exception as e:
-        print(f"Spotify artist lookup failed for '{artist_name}': {e}")
+        print(f"Wikipedia artist lookup failed for '{artist_name}': {e}")
         return None
 
 
-def get_spotify_access_token():
-    if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
-        print("Spotify credentials missing: set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET")
-        return None
+def fetch_wikipedia_discography_entries(page_title, visited=None):
+    if not page_title:
+        return []
 
-    now = int(time.time())
-    cached = _spotify_token_cache.get("access_token")
-    expires_at = int(_spotify_token_cache.get("expires_at") or 0)
-    if cached and expires_at - 60 > now:
+    if visited is None:
+        visited = set()
+    if page_title in visited:
+        return []
+    visited.add(page_title)
+
+    cached = _cache_get(_artist_discography_cache, page_title)
+    if cached:
         return cached
 
-    try:
-        response = requests.post(
-            "https://accounts.spotify.com/api/token",
-            data={"grant_type": "client_credentials"},
-            auth=(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET),
-            timeout=10,
+    sections_payload = wikipedia_get_json(
+        {
+            "action": "parse",
+            "page": page_title,
+            "prop": "sections",
+        },
+        timeout=6,
+    )
+    sections = ((sections_payload or {}).get("parse") or {}).get("sections") or []
+    song_sections = [sec for sec in sections if is_song_discography_section(sec.get("line"))]
+    target_sections = song_sections or [sec for sec in sections if is_discography_section(sec.get("line"))]
+
+    entries = []
+    seen = set()
+
+    for section in target_sections[:4]:
+        section_index = section.get("index")
+        if not section_index:
+            continue
+
+        content_payload = wikipedia_get_json(
+            {
+                "action": "parse",
+                "page": page_title,
+                "prop": "text",
+                "section": section_index,
+            },
+            timeout=6,
         )
-        if response.status_code != 200:
-            print(f"Spotify token request failed with status {response.status_code}")
-            return None
+        html = (((content_payload or {}).get("parse") or {}).get("text") or {}).get("*") or ""
+        if not html:
+            continue
 
-        payload = response.json() or {}
-        access_token = payload.get("access_token")
-        expires_in = int(payload.get("expires_in") or 3600)
-        if not access_token:
-            return None
+        main_article_title = extract_main_discography_article_title(html)
+        if main_article_title and main_article_title != page_title:
+            linked_entries = fetch_wikipedia_discography_entries(main_article_title, visited=visited)
+            if linked_entries:
+                _cache_set(_artist_discography_cache, page_title, linked_entries, ttl_seconds=3600)
+                return linked_entries
 
-        _spotify_token_cache["access_token"] = access_token
-        _spotify_token_cache["expires_at"] = now + expires_in
-        return access_token
-    except Exception as e:
-        print(f"Spotify token request error: {e}")
-        return None
+        for entry in extract_song_discography_entries(html, section.get("line")):
+            title = entry.get("title")
+            key = normalize_title_for_match(title)
+            if not title or len(title) < 2 or key in seen:
+                continue
+            seen.add(key)
+            entries.append(entry)
 
-
-def spotify_get(url, params=None):
-    token = get_spotify_access_token()
-    if not token:
-        return None
-
-    try:
-        response = requests.get(
-            url,
-            headers={"Authorization": f"Bearer {token}"},
-            params=params or {},
-            timeout=10,
-        )
-        if response.status_code != 200:
-            return None
-        return response.json()
-    except Exception:
-        return None
-
-
+    if entries:
+        _cache_set(_artist_discography_cache, page_title, entries, ttl_seconds=3600)
+    return entries
 
 
 GOOGLE_CLIENT_ID = "246868796255-a8bgcc7v21g956ghn2emcreh0ibp51d9.apps.googleusercontent.com"
@@ -448,59 +735,6 @@ def upload():
     unique_name = f"{uuid.uuid4()}_{file.filename}"
     filepath = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
 
-    # Check if this file already exists in the database
-    existing_track = Track.query.filter_by(file_path=filepath).first()
-    if existing_track:
-        # First, save the newly uploaded file (in case it was deleted)
-        file.save(filepath)
-        print(f"Saved uploaded file to {filepath}")
-        
-        # File path exists in database - re-process it for metadata and cover art
-        # Re-extract metadata from the newly uploaded file
-        metadata = extract_metadata(filepath)
-        if metadata:
-            # Update track metadata
-            existing_track.title = metadata['title'] or existing_track.title
-            existing_track.artist = metadata['artist'] or existing_track.artist
-            existing_track.album = metadata['album'] or existing_track.album
-            existing_track.genre = metadata['genre'] or existing_track.genre
-            existing_track.duration = metadata['duration'] or existing_track.duration
-            existing_track.bitrate = metadata['bitrate'] or existing_track.bitrate
-            existing_track.year = metadata['year'] or existing_track.year
-
-            # Try to fetch cover art
-            title = existing_track.title
-            artist = existing_track.artist
-            album = existing_track.album
-
-            cover_art_path = None
-            if title and artist:
-                print(f"Fetching cover art for: '{title}' by {artist}" + (f" from album '{album}'" if album else ""))
-                cover_data = fetch_musicbrainz_cover_art(title, artist, album)
-                if cover_data:
-                    cover_art_path = save_cover_art(cover_data, artist, album)
-                    if cover_art_path:
-                        # Update ALL tracks with the same album (or same main artist if no album)
-                        if album:
-                            tracks_to_update = Track.query.filter_by(album=album).all()
-                        else:
-                            main_artist = artist.split(',')[0].strip()
-                            tracks_to_update = Track.query.filter(Track.artist.like(f"{main_artist}%")).all()
-                        for track in tracks_to_update:
-                            track.cover_art_path = cover_art_path
-                        db.session.commit()
-                        print(f"Cover art updated for {len(tracks_to_update)} tracks with album '{album}'" if album else f"Cover art updated for {len(tracks_to_update)} tracks by artist '{main_artist}'")
-                else:
-                    print(f"No cover art found for '{title}' by {artist}")
-
-            db.session.commit()
-
-        return jsonify({
-            "message": "File re-processed for metadata and cover art",
-            "filename": file.filename,
-            "track_id": existing_track.track_id
-        }), 200
-
     # New file - save it and process
     file.save(filepath)
 
@@ -516,6 +750,17 @@ def upload():
         duration = metadata['duration'] if metadata and metadata['duration'] else None
         bitrate = metadata['bitrate'] if metadata and metadata['bitrate'] else None
         year = metadata['year'] if metadata and metadata['year'] else None
+
+        duplicate_track = find_duplicate_track(1, title, artist, album, duration)
+        if duplicate_track:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return jsonify({
+                "message": "Duplicate song skipped",
+                "filename": file.filename,
+                "track_id": duplicate_track.track_id,
+                "duplicate": True,
+            }), 200
 
         # Create track record
         track = Track(
@@ -577,13 +822,16 @@ def serve_cover(filename):
 def get_tracks():
     tracks = Track.query.filter_by(user_id=1).all()
     # Filter tracks to only include those whose files actually exist
-    # and remove duplicates based on file path
+    # and remove duplicates based on normalized song identity
     valid_tracks = []
-    seen_paths = set()
+    seen_signatures = set()
 
     for t in tracks:
-        if os.path.exists(t.file_path) and t.file_path not in seen_paths:
-            seen_paths.add(t.file_path)
+        if os.path.exists(t.file_path):
+            track_signature = build_track_signature(t.title, t.artist, t.album, t.duration)
+            if track_signature in seen_signatures:
+                continue
+            seen_signatures.add(track_signature)
             
             # Check if cover art file actually exists
             cover_art_url = None
@@ -630,7 +878,7 @@ def get_tracks():
             # Remove the track from database
             db.session.delete(t)
             db.session.commit()
-        # If file exists but path already seen, this is a duplicate - skip it
+        # If file exists but signature already seen, this is a duplicate - skip it
     return jsonify(valid_tracks), 200
     tracks = Track.query.filter_by(user_id=1).all()
 
@@ -652,47 +900,57 @@ def get_artists():
     tracks = Track.query.filter_by(user_id=1).all()
     artist_groups = {}
     feature_counts = {}
+    feature_signatures = {}
 
     for track in tracks:
         credits = split_artist_credits(track.artist)
         normalized = credits[0] if credits else "Unknown Artist"
         key = normalized.lower()
+        track_signature = build_track_signature(track.title, normalized, track.album, track.duration)
 
         if key not in artist_groups:
             artist_groups[key] = {
                 "name": normalized,
                 "display_name": normalized,
-                "track_count": 0,
+                "track_signatures": set(),
                 "owned_titles": [],
-                "local_image_url": None,
             }
 
         group = artist_groups[key]
-        group["track_count"] += 1
-        if track.title:
+        if track_signature not in group["track_signatures"]:
+            group["track_signatures"].add(track_signature)
+        if track.title and normalize_title_for_match(track.title) not in {normalize_title_for_match(title) for title in group["owned_titles"]}:
             group["owned_titles"].append(track.title)
-
-        if not group["local_image_url"] and track.cover_art_path:
-            cover_full_path = os.path.join(app.config["COVER_FOLDER"], track.cover_art_path)
-            if os.path.exists(cover_full_path):
-                group["local_image_url"] = f"http://localhost:5000/covers/{quote(track.cover_art_path)}"
 
         for featured_artist in credits[1:]:
             f_key = featured_artist.lower()
+            feature_signature = build_track_signature(track.title, featured_artist, track.album, track.duration)
+            if f_key not in feature_signatures:
+                feature_signatures[f_key] = set()
+            if feature_signature in feature_signatures[f_key]:
+                continue
+            feature_signatures[f_key].add(feature_signature)
             feature_counts[f_key] = feature_counts.get(f_key, 0) + 1
 
     payload = []
     for _, info in artist_groups.items():
-        mb_profile = fetch_artist_profile_from_musicbrainz(info["name"]) or {}
+        profile = fetch_artist_profile_from_musicbrainz(info["name"]) or {}
+
+        birth_date = profile.get("begin_date")
+        death_date = profile.get("end_date")
+        bio = profile.get("bio")
+        image_url = profile.get("image_url")
+
         payload.append({
-            "mbid": mb_profile.get("mbid"),
-            "name": mb_profile.get("name") or info["display_name"],
-            "age": mb_profile.get("age"),
-            "bio": mb_profile.get("bio"),
-            "image_url": mb_profile.get("image_url") or info.get("local_image_url"),
-            "birth_date": mb_profile.get("begin_date"),
-            "death_date": mb_profile.get("end_date"),
-            "track_count": info["track_count"],
+            "mbid": profile.get("mbid"),
+            "wikipedia_title": profile.get("wikipedia_title"),
+            "name": profile.get("name") or info["display_name"],
+            "age": profile.get("age"),
+            "bio": bio,
+            "image_url": image_url,
+            "birth_date": birth_date,
+            "death_date": death_date,
+            "track_count": len(info["track_signatures"]),
             "feature_count": feature_counts.get(info["name"].lower(), 0),
             "owned_titles": sorted(list(set(info["owned_titles"]))),
         })
@@ -704,6 +962,7 @@ def get_artists():
 @app.route("/artists/<artist_mbid>/discography", methods=["GET"])
 def get_artist_discography(artist_mbid):
     artist_name = request.args.get("name", "")
+    wikipedia_title = request.args.get("pageTitle", "")
     if not artist_name:
         return jsonify({"error": "Missing required query param: name"}), 400
 
@@ -714,92 +973,83 @@ def get_artist_discography(artist_mbid):
         Track.artist.ilike(f"{normalized_artist}%")
     ).all()
 
-    owned_titles = {normalize_title_for_match(t.title) for t in artist_tracks if t.title}
-    items = []
-    seen = set()
+    owned_lookup = {}
+    for t in artist_tracks:
+        if not t.title:
+            continue
+        key = normalize_title_for_match(t.title)
+        if not key:
+            continue
+        if key not in owned_lookup:
+            owned_lookup[key] = {
+                "track_id": t.track_id,
+                "stream_url": f"http://localhost:5000/music/{quote(os.path.basename(t.file_path))}",
+            }
 
-    # Pull albums/singles from Spotify and expand to track lists.
-    if artist_mbid and artist_mbid != "unknown":
+    items_map = {}
+
+    def upsert_item(title, release_year=None, group_name=None, group_release_year=None):
+        key = normalize_title_for_match(title)
+        if not key:
+            return
+
+        owned_meta = owned_lookup.get(key)
+        owned = owned_meta is not None
+
+        existing = items_map.get(key)
+        if existing:
+            if owned and not existing.get("owned"):
+                existing["owned"] = True
+                existing["track_id"] = owned_meta.get("track_id")
+                existing["stream_url"] = owned_meta.get("stream_url")
+            if existing.get("release_year") is None and release_year is not None:
+                existing["release_year"] = release_year
+            if not existing.get("group_name") and group_name:
+                existing["group_name"] = group_name
+            if existing.get("group_release_year") is None and group_release_year is not None:
+                existing["group_release_year"] = group_release_year
+            return
+
+        items_map[key] = {
+            "title": title,
+            "owned": owned,
+            "track_id": owned_meta.get("track_id") if owned_meta else None,
+            "stream_url": owned_meta.get("stream_url") if owned_meta else None,
+            "release_year": release_year,
+            "group_name": group_name,
+            "group_release_year": group_release_year,
+        }
+
+    # Always include locally owned titles first.
+    for track in artist_tracks:
+        if track.title:
+            try:
+                release_year = int(str(track.year)[:4]) if track.year else None
+            except ValueError:
+                release_year = None
+            upsert_item(track.title, release_year, "Singles", release_year)
+
+    # Add Wikipedia discography titles from the matched artist page.
+    page_title = wikipedia_title or (artist_mbid if artist_mbid and artist_mbid != "unknown" else "")
+    if page_title:
         try:
-            albums = []
-            offset = 0
-            while len(albums) < 200:
-                payload = spotify_get(
-                    f"https://api.spotify.com/v1/artists/{artist_mbid}/albums",
-                    {
-                        "include_groups": "album,single",
-                        "limit": 50,
-                        "offset": offset,
-                        "market": "US",
-                    },
+            entries = fetch_wikipedia_discography_entries(page_title)
+            if not entries and not page_title.lower().endswith(" discography"):
+                entries = fetch_wikipedia_discography_entries(f"{page_title} discography")
+
+            for entry in entries:
+                upsert_item(
+                    entry.get("title"),
+                    entry.get("release_year"),
+                    entry.get("group_name"),
+                    entry.get("group_release_year"),
                 )
-                if not payload:
-                    break
-
-                page_items = payload.get("items") or []
-                if not page_items:
-                    break
-
-                albums.extend(page_items)
-                if len(page_items) < 50:
-                    break
-                offset += 50
-
-            album_seen = set()
-            unique_albums = []
-            for album in albums:
-                aid = album.get("id")
-                if not aid or aid in album_seen:
-                    continue
-                album_seen.add(aid)
-                unique_albums.append(album)
-
-            for album in unique_albums[:120]:
-                album_id = album.get("id")
-                if not album_id:
-                    continue
-
-                tracks_payload = spotify_get(
-                    f"https://api.spotify.com/v1/albums/{album_id}/tracks",
-                    {"limit": 50, "market": "US"},
-                )
-                if not tracks_payload:
-                    continue
-
-                for tr in tracks_payload.get("items") or []:
-                    title = tr.get("name")
-                    if not title:
-                        continue
-
-                    key = normalize_title_for_match(title)
-                    if not key or key in seen:
-                        continue
-                    seen.add(key)
-
-                    items.append({
-                        "title": title,
-                        "release": album.get("name"),
-                        "owned": key in owned_titles,
-                    })
         except Exception as e:
-            print(f"Spotify discography lookup failed for {artist_mbid}: {e}")
+            print(f"Wikipedia discography lookup failed for {page_title}: {e}")
 
-    # If MusicBrainz yields nothing, fall back to the local artist tracks.
-    if not items:
-        for track in artist_tracks:
-            if not track.title:
-                continue
-            key = normalize_title_for_match(track.title)
-            if key in seen:
-                continue
-            seen.add(key)
-            items.append({
-                "title": track.title,
-                "release": track.album,
-                "owned": True,
-            })
+    items = list(items_map.values())
 
-    items.sort(key=lambda item: (not item.get("owned", False), (item.get("title") or "").lower()))
+    items.sort(key=lambda item: (item.get("release_year") is None, item.get("release_year") or 9999, (item.get("title") or "").lower()))
 
     return jsonify({
         "artist": normalized_artist,
