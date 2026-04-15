@@ -120,6 +120,7 @@ export default function App() {
             id: track.track_id,
             name: track.title,
             artist: track.artist || 'Unknown Artist',
+            album: track.album,
             gradient: gradients[Math.floor(Math.random() * gradients.length)],
             isPlaying: false,
             url,
