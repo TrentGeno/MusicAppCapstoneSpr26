@@ -11,6 +11,7 @@ def test_tracks_api():
             for track in tracks:
                 cover_status = "HAS COVER" if track.get("cover_art_url") else "NO COVER"
                 print(f'  {track["title"]} by {track["artist"]} - {cover_status}')
+                print(f'    Album: {track.get("album", "NOT IN RESPONSE")}')  
                 if track.get("cover_art_url"):
                     print(f'    Cover URL: {track["cover_art_url"]}')
         else:
