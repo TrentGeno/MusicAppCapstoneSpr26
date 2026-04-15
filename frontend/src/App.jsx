@@ -398,7 +398,7 @@ export default function App() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
       <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
-      <main style={{ flex: 1, paddingBottom: currentSongId ? '72px' : '0' }}>
+      <main style={{ flex: 1, paddingBottom: currentSongId ? '120px' : '2rem' }}>
         <Routes>
           <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
           <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
@@ -460,7 +460,7 @@ export default function App() {
           onClose={handleCloseSoundbar}
         />
       )}
-      <Footer />
+      <Footer currentSongId={currentSongId} />
     </div>
   );
 }

@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
 
-export default function Footer() {
+export default function Footer({ currentSongId }) {
   return (
     <footer style={{
-  background: 'var(--background-secondary)',
-  borderTop: '1px solid var(--border)',
-  padding: '2rem 0',
-}}>
+      background: 'var(--background-secondary)',
+      borderTop: '1px solid var(--border)',
+      padding: '2rem 0',
+      paddingBottom: currentSongId ? '6rem' : '2rem',
+    }}>
       <div className="container">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           
@@ -20,7 +21,7 @@ export default function Footer() {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
               letterSpacing: '2px',
-              marginBottom: '0.25rem'
+              marginBottom: '.5rem'
             }}>
               OffBeat
             </div>
