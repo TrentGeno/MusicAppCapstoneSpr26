@@ -54,10 +54,10 @@ export default function SongCard({ song, togglePlay, viewMode, playlists, onDele
             ? <img src={song.cover} alt="cover" className="song-thumb-sm" />
             : <div className="song-thumb-sm song-thumb-placeholder">{song.name.charAt(0).toUpperCase()}</div>
           }
-          <div className="song-info" style={{ flex: 1, minWidth: 0 }}>
-            <span className="song-name">{song.name}</span>
-            <span className="song-artist">{song.artist}</span>
-          </div>
+        <div className="song-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <span className="song-name">{song.name}</span>
+          <span className="song-artist">{song.artist}</span>
+        </div>
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', flexShrink: 0 }}>
             {song.duration}
           </span>

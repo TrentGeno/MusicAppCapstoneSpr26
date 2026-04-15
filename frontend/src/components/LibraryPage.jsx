@@ -12,7 +12,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
   const [activeFilter, setActiveFilter] = useState('Songs');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
-  const [viewMode, setViewMode] = useState('grid'); // ← moved up here
+  const [viewMode, setViewMode] = useState('grid');
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -63,6 +63,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
     setActiveFilter(f);
     setSearch('');
     setSelected(null);
+    if (f === 'Artists' || f === 'Albums') setViewMode('grid');
   };
 
   const renderSection = () => {
@@ -97,9 +98,26 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           </h1>
         </div>
 
-        {/* Search + view toggle — hidden when drilled in */}
         {!selected && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Toggle on the left — always takes up space to prevent search bar shifting */}
+            <div style={{
+              display: 'flex',
+              gap: '0.25rem',
+              visibility: (activeFilter === 'Songs' || activeFilter === 'Recently Added') ? 'visible' : 'hidden'
+            }}>
+              {['grid', 'list'].map(mode => (
+                <button
+                  key={mode}
+                  className={`view-toggle-btn ${viewMode === mode ? 'active' : ''}`}
+                  onClick={() => setViewMode(mode)}
+                  title={`${mode} view`}
+                >
+                  {mode === 'grid' ? '⊞' : '☰'}
+                </button>
+              ))}
+            </div>
+            {/* Search on the right */}
             <input
               className="library-search"
               type="text"
@@ -107,20 +125,6 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            <button
-              className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')}
-              title="Grid view"
-            >
-              ⊞
-            </button>
-            <button
-              className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-              title="List view"
-            >
-              ☰
-            </button>
           </div>
         )}
       </div>
@@ -173,7 +177,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
                   playlists={playlists}
                   onDelete={fetchLibrary}
                   fetchPlaylists={fetchPlaylists}
-                  viewMode={viewMode}  // ← also pass here for drill-down
+                  viewMode={viewMode}
                 />
               ))}
             </div>
