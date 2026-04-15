@@ -12,7 +12,8 @@ export default function Soundbar({
   library,
   currentSongId,
   globalRepeatMode,
-  seek
+  seek,
+  onClose
 }) {
   const currentSong = library.find(s => s.id === currentSongId);
   const repeatMode = globalRepeatMode || 'none';
@@ -111,14 +112,6 @@ export default function Soundbar({
       {/* Volume controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: 72, flexShrink: 0 }}>
-          <button
-            className="control-btn"
-            onClick={toggleRepeat}
-            title={repeatMode === 'one' ? 'Repeat one' : repeatMode === 'all' ? 'Repeat all' : 'No repeat'}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            🔁
-          </button>
           <span style={{ fontSize: '0.65rem', color: 'white', opacity: 0.85, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em', width: '100%', lineHeight: 1 }}>
             {repeatMode === 'all' ? 'All' : repeatMode === 'one' ? 'Current' : 'None'}
           </span>
@@ -136,6 +129,16 @@ export default function Soundbar({
           {Math.round((isMuted ? 0 : volume) * 100)}%
         </span>
       </div>
+      {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem', opacity: 0.6, flexShrink: 0, transition: 'opacity 0.2s' }}
+          onMouseOver={e => e.currentTarget.style.opacity = 1}
+          onMouseOut={e => e.currentTarget.style.opacity = 0.6}
+          title="Close player"
+        >
+          ✕
+        </button>
     </div>
   );
 }

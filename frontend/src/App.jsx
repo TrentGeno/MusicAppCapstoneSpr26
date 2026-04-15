@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';import './App.css';
-import JsMediaTags from 'jsmediatags/dist/jsmediatags.min.js';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import './App.css';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HomePage from './components/Homepage';
@@ -14,9 +14,7 @@ import Footer from './components/Footer';
 import RecentlyAddedPage from './components/RecentlyAddedPage';
 import LibraryPage from './components/LibraryPage';
 
-
 export default function App() {
-  // State management
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
@@ -50,11 +48,7 @@ export default function App() {
       ? hex.replace('#', '').split('').map((c) => c + c).join('')
       : hex.replace('#', '');
     const num = parseInt(cleaned, 16);
-    return [
-      (num >> 16) & 255,
-      (num >> 8) & 255,
-      num & 255,
-    ].join(',');
+    return [(num >> 16) & 255, (num >> 8) & 255, num & 255].join(',');
   };
 
   const themeStyles = {
@@ -90,8 +84,22 @@ export default function App() {
     setTheme(newTheme);
     localStorage.setItem('appTheme', JSON.stringify(newTheme));
   };
-  
-    // Fetch all tracks from backend and wire up Audio objects
+
+  const fetchPlaylists = useCallback(() => {
+    fetch('http://localhost:5000/playlists')
+      .then(res => res.json())
+      .then(data => {
+        setPlaylists(data.map(p => ({
+          id: p.playlist_id,
+          name: p.name,
+          description: p.description,
+          songCount: p.track_count,
+          coverUrls: p.cover_urls || []
+        })));
+      })
+      .catch(err => console.error('Failed to load playlists:', err));
+  }, []);
+
   const fetchLibrary = useCallback(() => {
     const gradients = [
       `linear-gradient(135deg, ${theme.main}, ${theme.accent1})`,
@@ -118,7 +126,7 @@ export default function App() {
             duration: '--:--',
             currentTime: '0:00',
             progress: 0,
-            cover: track.cover_art_url,  // Use cover art from backend
+            cover: track.cover_art_url,
             repeatMode: 'none',
           };
 
@@ -143,60 +151,56 @@ export default function App() {
             }
           });
 
-                audio.addEventListener('ended', () => {
-                    setLibrary(prev => {
-                      const index = prev.findIndex(s => s.id === song.id);
-                      if (index === -1) return prev;
-                      const current = prev[index];
-                      const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
+          audio.addEventListener('ended', () => {
+            setLibrary(prev => {
+              const index = prev.findIndex(s => s.id === song.id);
+              if (index === -1) return prev;
+              const current = prev[index];
+              const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
 
-                      if (mode === 'one') {
-                        current.audio.currentTime = 0;
-                        current.audio.play();
-                        const copy = [...prev];
-                        copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
-                        return copy;
-                      }
+              if (mode === 'one') {
+                current.audio.currentTime = 0;
+                current.audio.play();
+                const copy = [...prev];
+                copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
+                return copy;
+              }
 
-                      if (mode === 'all') {
-                        const nextIndex = (index + 1) % prev.length;
-                        return prev.map((s, i) => {
-                          if (i === index) return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
-                          if (i === nextIndex) {
-                            s.audio.currentTime = 0;
-                            s.audio.play();
-                            return { ...s, isPlaying: true };
-                          }
-                          return { ...s, isPlaying: false };
-                        });
-                      }
+              if (mode === 'all') {
+                const nextIndex = (index + 1) % prev.length;
+                return prev.map((s, i) => {
+                  if (i === index) return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
+                  if (i === nextIndex) {
+                    s.audio.currentTime = 0;
+                    s.audio.play();
+                    return { ...s, isPlaying: true };
+                  }
+                  return { ...s, isPlaying: false };
+                });
+              }
 
-                      // Playlist queue auto-advance
-                      const queue = playlistQueueRef.current;
-                      if (queue.length > 0) {
-                        const currentQueueIndex = queue.indexOf(song.id);
-                        const nextId = queue[currentQueueIndex + 1];
-                        if (nextId) {
-                          const nextSong = prev.find(s => s.id === nextId);
-                          if (nextSong) {
-                            setTimeout(() => {
-                              nextSong.audio.currentTime = 0;
-                              nextSong.audio.play();
-                              setCurrentSongId(nextId);
-                              setLibrary(l => l.map(s => ({
-                                ...s,
-                                isPlaying: s.id === nextId
-                              })));
-                            }, 100);
-                          }
-                        }
-                      }
+              const queue = playlistQueueRef.current;
+              if (queue.length > 0) {
+                const currentQueueIndex = queue.indexOf(song.id);
+                const nextId = queue[currentQueueIndex + 1];
+                if (nextId) {
+                  const nextSong = prev.find(s => s.id === nextId);
+                  if (nextSong) {
+                    setTimeout(() => {
+                      nextSong.audio.currentTime = 0;
+                      nextSong.audio.play();
+                      setCurrentSongId(nextId);
+                      setLibrary(l => l.map(s => ({ ...s, isPlaying: s.id === nextId })));
+                    }, 100);
+                  }
+                }
+              }
 
-                      return prev.map(s =>
-                        s.id === song.id ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' } : s
-                      );
-                    });
-                  });
+              return prev.map(s =>
+                s.id === song.id ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' } : s
+              );
+            });
+          });
 
           return song;
         });
@@ -206,38 +210,30 @@ export default function App() {
       .catch(err => console.error('Failed to load tracks:', err));
   }, [globalRepeatMode, theme]);
 
+  useEffect(() => {
+    fetchLibrary();
+    fetchPlaylists();
+  }, [fetchLibrary, fetchPlaylists]);
 
-
-  // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
-
-
 
   const handleSignOut = () => {
     setUser(null);
     setDropdownOpen(false);
     localStorage.removeItem('user');
-    if (window.google) {
-      window.google.accounts.id.disableAutoSelect();
-    }
+    if (window.google) window.google.accounts.id.disableAutoSelect();
   };
 
-  // Volume control
   const toggleMute = () => {
     if (isMuted) {
       const unmuteVolume = Math.min(volume, 0.75);
       setVolume(unmuteVolume);
       setIsMuted(false);
-      library.forEach(song => {
-        song.audio.muted = false;
-        song.audio.volume = unmuteVolume;
-      });
+      library.forEach(song => { song.audio.muted = false; song.audio.volume = unmuteVolume; });
     } else {
       setIsMuted(true);
-      library.forEach(song => {
-        song.audio.muted = true;
-      });
+      library.forEach(song => { song.audio.muted = true; });
     }
   };
 
@@ -248,18 +244,15 @@ export default function App() {
   };
 
   const replaySong = () => {
-  const song = library.find(s => s.id === currentSongId);
-  const index = library.findIndex(s => s.id === currentSongId);
-
-  if (song && song.audio.currentTime > 2) {
-    // More than 2 seconds in — restart the current song
-    song.audio.currentTime = 0;
-  } else {
-    // Within first 2 seconds — go to previous song
-    const prevIndex = (index - 1 + library.length) % library.length;
-    if (library[prevIndex]) togglePlay(library[prevIndex].id);
-  }
-};
+    const song = library.find(s => s.id === currentSongId);
+    const index = library.findIndex(s => s.id === currentSongId);
+    if (song && song.audio.currentTime > 2) {
+      song.audio.currentTime = 0;
+    } else {
+      const prevIndex = (index - 1 + library.length) % library.length;
+      if (library[prevIndex]) togglePlay(library[prevIndex].id);
+    }
+  };
 
   const handleSoundbarPlay = () => {
     if (currentSongId) {
@@ -272,12 +265,9 @@ export default function App() {
   const changeVolume = (value) => {
     setVolume(value);
     setIsMuted(value === 0);
-    library.forEach(song => {
-      song.audio.volume = value;
-    });
+    library.forEach(song => { song.audio.volume = value; });
   };
 
-  // File handling
   const getFileKey = (file) => `${file.name}-${file.size}-${file.lastModified}`;
 
   const handleFiles = (files) => {
@@ -285,10 +275,6 @@ export default function App() {
     setUploadedFiles(prev => {
       const existingKeys = new Set(prev.map(getFileKey));
       const newFiles = fileArray.filter(file => !existingKeys.has(getFileKey(file)));
-      if (newFiles.length < fileArray.length) {
-        // Duplicate items are ignored
-        console.warn('Skipped duplicate upload candidates');
-      }
       return [...prev, ...newFiles];
     });
   };
@@ -306,69 +292,35 @@ export default function App() {
     });
   };
 
-  
-
-  // Drag and drop handlers
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    handleFiles(e.dataTransfer.files);
-  };
+  const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = () => setIsDragging(false);
+  const handleDrop = (e) => { e.preventDefault(); setIsDragging(false); handleFiles(e.dataTransfer.files); };
 
   const handleUpload = async () => {
     if (uploadedFiles.length === 0 || isUploading) return;
-
     const formData = new FormData();
     uploadedFiles.forEach(file => formData.append('file', file));
-
-    const initialProgress = uploadedFiles.reduce((acc, file) => {
-      acc[getFileKey(file)] = 0;
-      return acc;
-    }, {});
-
+    const initialProgress = uploadedFiles.reduce((acc, file) => { acc[getFileKey(file)] = 0; return acc; }, {});
     setUploadProgress(initialProgress);
     setIsUploading(true);
-
     try {
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', 'http://localhost:5000/upload');
-
         xhr.upload.onprogress = (event) => {
           if (!event.lengthComputable) return;
           const percent = Math.round((event.loaded / event.total) * 100);
           setUploadProgress(prev => {
             const next = { ...prev };
-            Object.keys(next).forEach(key => {
-              next[key] = percent;
-            });
+            Object.keys(next).forEach(key => { next[key] = percent; });
             return next;
           });
         };
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
-          }
-        };
-
+        xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed with status ${xhr.status}`));
         xhr.onerror = () => reject(new Error('Network error during upload'));
-        xhr.onabort = () => reject(new Error('Upload aborted by the user'));
-
+        xhr.onabort = () => reject(new Error('Upload aborted'));
         xhr.send(formData);
       });
-
       fetchLibrary();
       setUploadedFiles([]);
       closeModal();
@@ -381,16 +333,11 @@ export default function App() {
     }
   };
 
-  // Toggle play/pause and ensure only one track plays at a time
   const togglePlay = (songId) => {
     setCurrentSongId(songId);
     setLibrary(prev => prev.map(song => {
       if (song.id === songId) {
-        if (song.isPlaying) {
-          song.audio.pause();
-        } else {
-          song.audio.play();
-        }
+        if (song.isPlaying) { song.audio.pause(); } else { song.audio.play(); }
         return { ...song, isPlaying: !song.isPlaying };
       }
       if (song.isPlaying) song.audio.pause();
@@ -398,16 +345,13 @@ export default function App() {
     }));
   };
 
-  // seek within a track when progress bar clicked
   const seek = (songId, percent) => {
     setLibrary(prev =>
       prev.map(song => {
         if (song.id === songId && song.audio.duration) {
           song.audio.currentTime = (percent / 100) * song.audio.duration;
           const mins = Math.floor(song.audio.currentTime / 60);
-          const secs = Math.floor(song.audio.currentTime % 60)
-            .toString()
-            .padStart(2, '0');
+          const secs = Math.floor(song.audio.currentTime % 60).toString().padStart(2, '0');
           return { ...song, progress: percent, currentTime: `${mins}:${secs}` };
         }
         return song;
@@ -415,84 +359,59 @@ export default function App() {
     );
   };
 
-  // Toggle repeat mode: none -> all -> one -> none
   const toggleRepeat = () => {
     setGlobalRepeatMode(prev => {
       switch (prev) {
-        case 'none':
-          return 'all';
-        case 'all':
-          return 'one';
-        case 'one':
-        default:
-          return 'none';
+        case 'none': return 'all';
+        case 'all': return 'one';
+        case 'one': default: return 'none';
       }
     });
   };
 
-const fetchPlaylists = useCallback(() => {
-  fetch('http://localhost:5000/playlists')
-    .then(res => res.json())
-    .then(data => {
-      setPlaylists(data.map(p => ({
-        id: p.playlist_id,
-        name: p.name,
-        description: p.description,
-        songCount: p.track_count,
-        coverUrls: p.cover_urls || []
-      })));
-    })
-    .catch(err => console.error('Failed to load playlists:', err));
-}, []);
-  
+  const handleCreatePlaylist = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('http://localhost:5000/playlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(playlistData)
+      });
+      await response.json();
+      await fetchPlaylists();
+      setPlaylistData({ name: '', description: '' });
+      closeModal();
+    } catch (error) {
+      console.error('Playlist creation error:', error);
+      alert('Failed to create playlist. Please try again.');
+    }
+  };
 
-const handleCreatePlaylist = async (e) => {
-  e.preventDefault();
-  try {
-    const response = await fetch('http://localhost:5000/playlist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(playlistData)
-    });
-    await response.json();
-    await fetchPlaylists(); // 👈 fetch fresh from backend instead of building locally
-    setPlaylistData({ name: '', description: '' });
-    closeModal();
-  } catch (error) {
-    console.error('Playlist creation error:', error);
-    alert('Failed to create playlist. Please try again.');
-  }
-};
-
-useEffect(() => {
-  fetchLibrary();
-  fetchPlaylists();
-}, [fetchLibrary, fetchPlaylists]);
-
+  const handleCloseSoundbar = () => {
+    const song = library.find(s => s.id === currentSongId);
+    if (song) song.audio.pause();
+    setCurrentSongId(null);
+    setLibrary(prev => prev.map(s => ({ ...s, isPlaying: false })));
+  };
 
   return (
-<div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
-
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
       <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
       <main style={{ flex: 1, paddingBottom: currentSongId ? '72px' : '0' }}>
-      <Routes>
-      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-      <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
-      <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
-      <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
-      <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-      <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists}/>} />
-      </Routes>
+        <Routes>
+          <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+          <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
+          <Route path="/artists" element={<div style={{padding: '2rem'}}>Artists coming soon</div>} />
+          <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
+          <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+          <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+        </Routes>
       </main>
-     {activeModal === "playlist" && (
-      <PlaylistModal
-      playlistData={playlistData}
-      setPlaylistData={setPlaylistData}
-      handleCreatePlaylist={handleCreatePlaylist}
-      closeModal={closeModal}
-      />)}
 
+      {activeModal === "playlist" && (
+        <PlaylistModal playlistData={playlistData} setPlaylistData={setPlaylistData} handleCreatePlaylist={handleCreatePlaylist} closeModal={closeModal} />
+      )}
       {activeModal === "signin" && (
         <SignInModal
           handleGoogleSignIn={(response) => {
@@ -506,45 +425,42 @@ useEffect(() => {
         />
       )}
       {activeModal === 'customize' && (
-        <CustomizeModal
-          theme={theme}
-          onSave={handleThemeSave}
+        <CustomizeModal theme={theme} onSave={handleThemeSave} closeModal={closeModal} />
+      )}
+      {activeModal === "upload" && (
+        <UploadModal
+          uploadedFiles={uploadedFiles}
+          handleFiles={handleFiles}
+          removeFile={removeFile}
+          handleUpload={handleUpload}
           closeModal={closeModal}
+          isDragging={isDragging}
+          handleDragOver={handleDragOver}
+          handleDragLeave={handleDragLeave}
+          handleDrop={handleDrop}
+          uploadProgress={uploadProgress}
+          isUploading={isUploading}
         />
       )}
-    {activeModal === "upload" && (
-    <UploadModal
-      uploadedFiles={uploadedFiles}
-      handleFiles={handleFiles}
-      removeFile={removeFile}
-      handleUpload={handleUpload}
-      closeModal={closeModal}
-      isDragging={isDragging}
-      handleDragOver={handleDragOver}
-      handleDragLeave={handleDragLeave}
-      handleDrop={handleDrop}
-      uploadProgress={uploadProgress}
-      isUploading={isUploading}
-    />)}
 
-    {/* Soundbar - only visible when there's a current song */}
-    {currentSongId && (
-      <Soundbar
-        toggleMute={toggleMute}
-        isMuted={isMuted}
-        volume={volume}
-        changeVolume={changeVolume}
-        replaySong={replaySong}
-        handleSoundbarPlay={handleSoundbarPlay}
-        skipSong={skipSong}
-        toggleRepeat={toggleRepeat}
-        library={library}
-        currentSongId={currentSongId}
-        globalRepeatMode={globalRepeatMode}
-        seek={seek}
-      />
-    )}
-    <Footer />
+      {currentSongId && (
+        <Soundbar
+          toggleMute={toggleMute}
+          isMuted={isMuted}
+          volume={volume}
+          changeVolume={changeVolume}
+          replaySong={replaySong}
+          handleSoundbarPlay={handleSoundbarPlay}
+          skipSong={skipSong}
+          toggleRepeat={toggleRepeat}
+          library={library}
+          currentSongId={currentSongId}
+          globalRepeatMode={globalRepeatMode}
+          seek={seek}
+          onClose={handleCloseSoundbar}
+        />
+      )}
+      <Footer />
     </div>
   );
 }
