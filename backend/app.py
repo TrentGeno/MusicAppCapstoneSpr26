@@ -20,7 +20,6 @@ import musicbrainzngs
 import requests
 from urllib.parse import quote
 from sqlalchemy import text as sa_text
-from wikipedia_discography import extract_main_discography_article_title, extract_song_discography_entries, is_discography_section, is_song_discography_section
 
 import sys
 
@@ -380,6 +379,51 @@ def normalize_title_for_match(title):
     return "".join(ch.lower() for ch in str(title) if ch.isalnum())
 
 
+def title_match_keys(title):
+    """
+    Build normalized title aliases so single and album versions map consistently.
+    """
+    if not title:
+        return []
+
+    raw = str(title).strip().lower()
+    if not raw:
+        return []
+
+    keys = []
+    seen = set()
+
+    def add_key(text):
+        key = normalize_title_for_match(text)
+        if key and key not in seen:
+            seen.add(key)
+            keys.append(key)
+
+    add_key(raw)
+
+    no_paren = re.sub(r"[\(\[\{].*?[\)\]\}]", " ", raw)
+    no_paren = re.sub(r"\s+", " ", no_paren).strip()
+    add_key(no_paren)
+
+    for source in [raw, no_paren]:
+        for sep in [" - ", " – ", " — ", " / "]:
+            if sep in source:
+                add_key(source.split(sep, 1)[0])
+
+    no_feat = re.sub(r"\b(feat\.?|ft\.?|featuring|with)\b.*$", "", no_paren).strip()
+    add_key(no_feat)
+
+    return keys
+
+
+def lookup_owned_by_title(title, owned_by_title):
+    for key in title_match_keys(title):
+        meta = owned_by_title.get(key)
+        if meta:
+            return meta
+    return None
+
+
 def normalize_track_field(value):
     return normalize_title_for_match(value or "")
 
@@ -602,7 +646,7 @@ def fetch_artist_profile_from_musicbrainz(artist_name):
             tags.append(description)
 
         profile = {
-            "mbid": page_title,
+            "mbid": fetch_musicbrainz_artist_mbid(artist_name),
             "wikipedia_title": page_title,
             "name": summary.get("title") or page_title or artist_name,
             "age": age,
@@ -622,71 +666,105 @@ def fetch_artist_profile_from_musicbrainz(artist_name):
         return None
 
 
-def fetch_wikipedia_discography_entries(page_title, visited=None):
-    if not page_title:
-        return []
-
-    if visited is None:
-        visited = set()
-    if page_title in visited:
-        return []
-    visited.add(page_title)
-
-    cached = _cache_get(_artist_discography_cache, page_title)
-    if cached:
+def fetch_musicbrainz_release_groups(artist_mbid):
+    """
+    Fetch all release groups for an artist from MusicBrainz.
+    Returns a list of dicts: {id, title, primary_type, secondary_types, release_year}.
+    Results are cached for 1 hour.
+    """
+    cache_key = f"mb_rg::{artist_mbid}"
+    cached = _cache_get(_artist_discography_cache, cache_key)
+    if cached is not None:
         return cached
 
-    sections_payload = wikipedia_get_json(
-        {
-            "action": "parse",
-            "page": page_title,
-            "prop": "sections",
-        },
-        timeout=6,
-    )
-    sections = ((sections_payload or {}).get("parse") or {}).get("sections") or []
-    song_sections = [sec for sec in sections if is_song_discography_section(sec.get("line"))]
-    target_sections = song_sections or [sec for sec in sections if is_discography_section(sec.get("line"))]
+    all_groups = []
+    limit = 100
+    offset = 0
+    first_page = True
 
-    entries = []
-    seen = set()
+    while True:
+        if not first_page:
+            time.sleep(1.0)  # respect MusicBrainz 1 req/sec rate limit
+        first_page = False
 
-    for section in target_sections[:4]:
-        section_index = section.get("index")
-        if not section_index:
-            continue
-
-        content_payload = wikipedia_get_json(
-            {
-                "action": "parse",
-                "page": page_title,
-                "prop": "text",
-                "section": section_index,
-            },
-            timeout=6,
+        data = musicbrainz_get_json(
+            "/release-group",
+            params={"artist": artist_mbid, "limit": limit, "offset": offset},
         )
-        html = (((content_payload or {}).get("parse") or {}).get("text") or {}).get("*") or ""
-        if not html:
-            continue
+        if not data:
+            break
 
-        main_article_title = extract_main_discography_article_title(html)
-        if main_article_title and main_article_title != page_title:
-            linked_entries = fetch_wikipedia_discography_entries(main_article_title, visited=visited)
-            if linked_entries:
-                _cache_set(_artist_discography_cache, page_title, linked_entries, ttl_seconds=3600)
-                return linked_entries
+        page = data.get("release-groups") or []
+        total = data.get("release-group-count", 0)
 
-        for entry in extract_song_discography_entries(html, section.get("line")):
-            title = entry.get("title")
-            key = normalize_title_for_match(title)
-            if not title or len(title) < 2 or key in seen:
+        for rg in page:
+            title = (rg.get("title") or "").strip()
+            if not title:
                 continue
-            seen.add(key)
-            entries.append(entry)
+            pt = rg.get("primary-type") or ""
+            secondary = [s.lower() for s in (rg.get("secondary-types") or [])]
+            first_date = rg.get("first-release-date") or ""
+            release_year = None
+            if len(first_date) >= 4:
+                try:
+                    release_year = int(first_date[:4])
+                except ValueError:
+                    pass
+            all_groups.append({
+                "id": rg.get("id") or "",
+                "title": title,
+                "primary_type": pt,
+                "secondary_types": secondary,
+                "release_year": release_year,
+            })
 
-    if entries:
-        _cache_set(_artist_discography_cache, page_title, entries, ttl_seconds=3600)
-    return entries
+        offset += len(page)
+        if offset >= total or not page:
+            break
+
+    _cache_set(_artist_discography_cache, cache_key, all_groups, ttl_seconds=3600)
+    return all_groups
+
+
+def fetch_musicbrainz_artist_mbid(artist_name):
+    """
+    Resolve an artist name to a MusicBrainz artist MBID.
+    Returns None if no suitable match is found.
+    """
+    normalized_name = normalize_artist_name(artist_name)
+    if not normalized_name:
+        return None
+
+    cache_key = f"mb_artist::{normalized_name.lower()}"
+    cached = _cache_get(_artist_profile_cache, cache_key)
+    if cached is not None:
+        return cached
+
+    data = musicbrainz_get_json(
+        "/artist",
+        params={"query": f'artist:"{normalized_name}"', "limit": 5},
+        timeout=8,
+    )
+    candidates = (data or {}).get("artists") or []
+    if not candidates:
+        _cache_set(_artist_profile_cache, cache_key, None, ttl_seconds=3600)
+        return None
+
+    normalized_lower = normalized_name.lower()
+
+    def score_candidate(candidate):
+        try:
+            base_score = int(candidate.get("score") or 0)
+        except (TypeError, ValueError):
+            base_score = 0
+        candidate_name = normalize_artist_name(candidate.get("name") or "").lower()
+        exact_bonus = 50 if candidate_name == normalized_lower else 0
+        return base_score + exact_bonus
+
+    best = max(candidates, key=score_candidate)
+    mbid = best.get("id")
+    _cache_set(_artist_profile_cache, cache_key, mbid, ttl_seconds=3600)
+    return mbid
 
 
 GOOGLE_CLIENT_ID = "246868796255-a8bgcc7v21g956ghn2emcreh0ibp51d9.apps.googleusercontent.com"
@@ -962,7 +1040,6 @@ def get_artists():
 @app.route("/artists/<artist_mbid>/discography", methods=["GET"])
 def get_artist_discography(artist_mbid):
     artist_name = request.args.get("name", "")
-    wikipedia_title = request.args.get("pageTitle", "")
     if not artist_name:
         return jsonify({"error": "Missing required query param: name"}), 400
 
@@ -973,88 +1050,262 @@ def get_artist_discography(artist_mbid):
         Track.artist.ilike(f"{normalized_artist}%")
     ).all()
 
-    owned_lookup = {}
+    # Build owned-album lookup (album title → track metadata).
+    owned_albums = {}  # normalized album title → {track_id, stream_url, release_year, cover_art_url}
+    owned_by_title = {}  # normalized song title → {track_id, stream_url, release_year, album}
     for t in artist_tracks:
         if not t.title:
             continue
-        key = normalize_title_for_match(t.title)
-        if not key:
+        title_keys = title_match_keys(t.title)
+        if not title_keys:
             continue
-        if key not in owned_lookup:
-            owned_lookup[key] = {
-                "track_id": t.track_id,
-                "stream_url": f"http://localhost:5000/music/{quote(os.path.basename(t.file_path))}",
-            }
-
-    items_map = {}
-
-    def upsert_item(title, release_year=None, group_name=None, group_release_year=None):
-        key = normalize_title_for_match(title)
-        if not key:
-            return
-
-        owned_meta = owned_lookup.get(key)
-        owned = owned_meta is not None
-
-        existing = items_map.get(key)
-        if existing:
-            if owned and not existing.get("owned"):
-                existing["owned"] = True
-                existing["track_id"] = owned_meta.get("track_id")
-                existing["stream_url"] = owned_meta.get("stream_url")
-            if existing.get("release_year") is None and release_year is not None:
-                existing["release_year"] = release_year
-            if not existing.get("group_name") and group_name:
-                existing["group_name"] = group_name
-            if existing.get("group_release_year") is None and group_release_year is not None:
-                existing["group_release_year"] = group_release_year
-            return
-
-        items_map[key] = {
-            "title": title,
-            "owned": owned,
-            "track_id": owned_meta.get("track_id") if owned_meta else None,
-            "stream_url": owned_meta.get("stream_url") if owned_meta else None,
-            "release_year": release_year,
-            "group_name": group_name,
-            "group_release_year": group_release_year,
-        }
-
-    # Always include locally owned titles first.
-    for track in artist_tracks:
-        if track.title:
-            try:
-                release_year = int(str(track.year)[:4]) if track.year else None
-            except ValueError:
-                release_year = None
-            upsert_item(track.title, release_year, "Singles", release_year)
-
-    # Add Wikipedia discography titles from the matched artist page.
-    page_title = wikipedia_title or (artist_mbid if artist_mbid and artist_mbid != "unknown" else "")
-    if page_title:
         try:
-            entries = fetch_wikipedia_discography_entries(page_title)
-            if not entries and not page_title.lower().endswith(" discography"):
-                entries = fetch_wikipedia_discography_entries(f"{page_title} discography")
+            release_year = int(str(t.year)[:4]) if t.year else None
+        except ValueError:
+            release_year = None
+        track_meta = {
+            "title": t.title,
+            "track_id": t.track_id,
+            "stream_url": f"http://localhost:5000/music/{quote(os.path.basename(t.file_path))}",
+            "release_year": release_year,
+            "album": t.album,
+        }
+        for title_key in title_keys:
+            if title_key not in owned_by_title:
+                owned_by_title[title_key] = track_meta
+        if t.album:
+            album_key = normalize_title_for_match(t.album)
+            if album_key and album_key not in owned_albums:
+                cover_art_url = None
+                if t.cover_art_path:
+                    cover_art_full_path = os.path.join(app.config["COVER_FOLDER"], t.cover_art_path)
+                    if os.path.exists(cover_art_full_path):
+                        cover_art_url = f"http://localhost:5000/covers/{quote(t.cover_art_path)}"
+                owned_albums[album_key] = {
+                    "track_id": t.track_id,
+                    "stream_url": f"http://localhost:5000/music/{quote(os.path.basename(t.file_path))}",
+                    "release_year": release_year,
+                    "cover_art_url": cover_art_url,
+                }
 
-            for entry in entries:
-                upsert_item(
-                    entry.get("title"),
-                    entry.get("release_year"),
-                    entry.get("group_name"),
-                    entry.get("group_release_year"),
-                )
+    # Fetch MusicBrainz release groups.
+    mb_groups = []
+    if artist_mbid and artist_mbid != "unknown":
+        try:
+            mb_groups = fetch_musicbrainz_release_groups(artist_mbid)
         except Exception as e:
-            print(f"Wikipedia discography lookup failed for {page_title}: {e}")
+            print(f"MusicBrainz release group fetch failed for {artist_mbid}: {e}")
 
-    items = list(items_map.values())
+    # Separate albums/EPs from singles (skip compilations/live).
+    skip_secondary = {"compilation", "live", "dj-mix", "mixtape/street"}
+    album_rgs = sorted(
+        [
+            rg for rg in mb_groups
+            if (rg["primary_type"] or "").lower() in ("album", "ep")
+            and not skip_secondary.intersection(rg["secondary_types"])
+        ],
+        key=lambda r: (r["release_year"] is None, r["release_year"] or 9999, r["title"].lower()),
+    )
+    single_rgs = sorted(
+        [rg for rg in mb_groups if (rg["primary_type"] or "").lower() == "single"],
+        key=lambda r: (r["release_year"] is None, r["release_year"] or 9999, r["title"].lower()),
+    )
 
-    items.sort(key=lambda item: (item.get("release_year") is None, item.get("release_year") or 9999, (item.get("title") or "").lower()))
+    # -- Albums section --
+    # Each album release group = one item. owned = user has at least one track from it.
+    album_items = []
+    mb_album_keys = set()
+    for rg in album_rgs:
+        key = normalize_title_for_match(rg["title"])
+        mb_album_keys.add(key)
+        owned_meta = owned_albums.get(key)
+        cover_art_url = None
+        if rg.get("id"):
+            cover_art_url = f"https://coverartarchive.org/release-group/{rg['id']}/front-250"
+        if owned_meta and owned_meta.get("cover_art_url"):
+            cover_art_url = owned_meta["cover_art_url"]
+        album_items.append({
+            "title": rg["title"],
+            "primary_type": rg["primary_type"],
+            "release_group_id": rg["id"],
+            "owned": owned_meta is not None,
+            "track_id": owned_meta["track_id"] if owned_meta else None,
+            "stream_url": owned_meta["stream_url"] if owned_meta else None,
+            "release_year": rg["release_year"],
+            "cover_art_url": cover_art_url,
+        })
+
+    album_items.sort(key=lambda i: (
+        i.get("release_year") is None,
+        i.get("release_year") or 9999,
+        (i.get("title") or "").lower(),
+    ))
+
+    # -- Singles section --
+    # Each single release group = one item + any owned tracks not already covered.
+    mb_single_keys = set()
+    singles_items = []
+    seen_single_titles = set()
+    for rg in single_rgs:
+        title = rg["title"]
+        for key in title_match_keys(title):
+            mb_single_keys.add(key)
+        title_key = normalize_title_for_match(title)
+        if title_key in seen_single_titles:
+            continue
+        seen_single_titles.add(title_key)
+        owned_meta = lookup_owned_by_title(rg["title"], owned_by_title)
+        singles_items.append({
+            "title": title,
+            "primary_type": "Single",
+            "owned": owned_meta is not None,
+            "track_id": owned_meta["track_id"] if owned_meta else None,
+            "stream_url": owned_meta["stream_url"] if owned_meta else None,
+            "release_year": rg["release_year"] or (owned_meta["release_year"] if owned_meta else None),
+        })
+
+    # Owned tracks not covered by any MB album or single → add to singles.
+    added_fallback_track_ids = set()
+    for owned_meta in owned_by_title.values():
+        track_id = owned_meta.get("track_id")
+        if track_id in added_fallback_track_ids:
+            continue
+        added_fallback_track_ids.add(track_id)
+
+        album_key = normalize_title_for_match(owned_meta.get("album") or "")
+        in_mb_album = bool(album_key) and album_key in mb_album_keys
+        in_mb_single = any(k in mb_single_keys for k in title_match_keys(owned_meta.get("title")))
+
+        owned_title_key = normalize_title_for_match(owned_meta.get("title"))
+        if owned_title_key in seen_single_titles:
+            continue
+        if not in_mb_album and not in_mb_single:
+            seen_single_titles.add(owned_title_key)
+            singles_items.append({
+                "title": owned_meta["title"],
+                "primary_type": "Single",
+                "owned": True,
+                "track_id": owned_meta["track_id"],
+                "stream_url": owned_meta["stream_url"],
+                "release_year": owned_meta["release_year"],
+            })
+
+    singles_items.sort(key=lambda i: (
+        i.get("release_year") is None,
+        i.get("release_year") or 9999,
+        (i.get("title") or "").lower(),
+    ))
+
+    groups = []
+    if album_items:
+        groups.append({
+            "type": "album",
+            "name": "Albums",
+            "release_year": None,
+            "items": album_items,
+        })
+    if singles_items:
+        groups.append({
+            "type": "single",
+            "name": "Singles",
+            "release_year": None,
+            "items": singles_items,
+        })
 
     return jsonify({
         "artist": normalized_artist,
-        "items": items,
+        "groups": groups,
     }), 200
+
+
+@app.route("/artists/<artist_mbid>/release-group/<release_group_id>/tracks", methods=["GET"])
+def get_release_group_tracks(artist_mbid, release_group_id):
+    """
+    Fetch the full tracklist for a MusicBrainz release group.
+    Returns tracks with owned/missing status based on the user's library.
+    Uses the first official release found for the release group.
+    """
+    artist_name = request.args.get("name", "")
+
+    cache_key = f"rg_tracks::{release_group_id}"
+    cached_tracks = _cache_get(_artist_discography_cache, cache_key)
+
+    if cached_tracks is None:
+        # Fetch releases for this release group (pick first official one).
+        data = musicbrainz_get_json(
+            "/release",
+            params={
+                "release-group": release_group_id,
+                "inc": "recordings",
+                "status": "official",
+                "limit": 5,
+            },
+            timeout=20,
+        )
+
+        if not data or not data.get("releases"):
+            return jsonify({"error": "No release found for this release group"}), 404
+
+        # Prefer releases with the most tracks (avoid single-disc partial releases).
+        releases = data["releases"]
+        best_release = max(
+            releases,
+            key=lambda r: sum(m.get("track-count", 0) for m in (r.get("media") or [])),
+        )
+
+        raw_tracks = []
+        for medium in (best_release.get("media") or []):
+            for track in (medium.get("tracks") or []):
+                title = (track.get("title") or "").strip()
+                if not title:
+                    continue
+                length_ms = track.get("length") or (track.get("recording") or {}).get("length") or 0
+                raw_tracks.append({
+                    "number": track.get("number") or track.get("position"),
+                    "title": title,
+                    "recording_id": (track.get("recording") or {}).get("id"),
+                    "length_ms": length_ms,
+                })
+
+        _cache_set(_artist_discography_cache, cache_key, raw_tracks, ttl_seconds=3600)
+        cached_tracks = raw_tracks
+
+    # Match against owned tracks in the user's library.
+    normalized_artist = normalize_artist_name(artist_name) if artist_name else ""
+    owned_by_title = {}
+    if normalized_artist:
+        artist_tracks = Track.query.filter(
+            Track.user_id == 1,
+            Track.artist.isnot(None),
+            Track.artist.ilike(f"{normalized_artist}%"),
+        ).all()
+        for t in artist_tracks:
+            if not t.title:
+                continue
+            track_meta = {
+                "track_id": t.track_id,
+                "stream_url": f"http://localhost:5000/music/{quote(os.path.basename(t.file_path))}",
+            }
+            for key in title_match_keys(t.title):
+                if key not in owned_by_title:
+                    owned_by_title[key] = track_meta
+
+    tracks = []
+    for raw in cached_tracks:
+        owned_meta = lookup_owned_by_title(raw["title"], owned_by_title)
+        length_ms = raw.get("length_ms") or 0
+        duration_str = f"{length_ms // 60000}:{(length_ms % 60000) // 1000:02d}" if length_ms else None
+        tracks.append({
+            "number": raw["number"],
+            "title": raw["title"],
+            "duration": duration_str,
+            "owned": owned_meta is not None,
+            "track_id": owned_meta["track_id"] if owned_meta else None,
+            "stream_url": owned_meta["stream_url"] if owned_meta else None,
+        })
+
+    return jsonify({"tracks": tracks}), 200
+
 
 @app.route("/playlists/<int:playlist_id>", methods=["PUT"])
 def update_playlist(playlist_id):
