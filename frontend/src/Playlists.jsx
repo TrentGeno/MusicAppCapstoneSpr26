@@ -14,6 +14,33 @@ export default function Playlist({ togglePlay, library, playlistQueueRef, fetchP
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editData, setEditData] = useState({ name: '', description: '', cover: null });
+  const [shuffled, setShuffled] = useState(false);
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function handleShuffle() {
+  if (!playlist?.tracks?.length) return;
+  const newShuffled = !shuffled;
+  setShuffled(newShuffled);
+
+  const ids = playlist.tracks
+    .map(t => library.find(s => s.id === t.track_id)?.id)
+    .filter(Boolean);
+
+  const queue = newShuffled ? shuffle(ids) : ids;
+  playlistQueueRef.current = queue;
+
+  if (newShuffled && queue.length > 0) {
+    togglePlay(queue[0]);
+  }
+}
 
   useEffect(() => {
     fetch(`http://localhost:5000/playlists/${id}`)
@@ -62,14 +89,15 @@ export default function Playlist({ togglePlay, library, playlistQueueRef, fetchP
     }
   }
 
-  function handlePlayAll() {
-    if (!playlist?.tracks?.length) return;
-    const queue = playlist.tracks
-      .map(t => library.find(s => s.id === t.track_id)?.id)
-      .filter(Boolean);
-    playlistQueueRef.current = queue;
-    if (queue.length > 0) togglePlay(queue[0]);
-  }
+ function handlePlayAll() {
+  if (!playlist?.tracks?.length) return;
+  const ids = playlist.tracks
+    .map(t => library.find(s => s.id === t.track_id)?.id)
+    .filter(Boolean);
+  const queue = shuffled ? shuffle(ids) : ids;
+  playlistQueueRef.current = queue;
+  if (queue.length > 0) togglePlay(queue[0]);
+}
 
   if (loading) return <div style={{ padding: '2rem', color: 'white' }}>Loading...</div>;
   if (!playlist) return <div style={{ padding: '2rem', color: 'white' }}>Playlist not found.</div>;
@@ -134,8 +162,17 @@ return (
 
               {/* Shuffle placeholder */}
               <button
-                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.3rem', opacity: 0.6 }}
-                title="Shuffle (coming soon)"
+                onClick={handleShuffle}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: shuffled ? 'var(--accent-purple)' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontSize: '1.3rem',
+                  opacity: shuffled ? 1 : 0.6,
+                  transition: 'color 0.2s, opacity 0.2s'
+                }}
+                title={shuffled ? 'Shuffle on' : 'Shuffle off'}
               >
                 ⇄
               </button>
