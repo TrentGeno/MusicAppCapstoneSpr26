@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../App.css';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import SongCard from './SongCard';
 import SongsSection from './SongsSection';
 import ArtistsSection from './ArtistsSection';
@@ -11,6 +11,7 @@ const FILTERS = ['Songs', 'Artists', 'Albums', 'Recently Added'];
 
 export default function LibraryPage({ library, togglePlay, currentSongId, fetchLibrary, playlists, fetchPlaylists }) {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('Songs');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
@@ -86,6 +87,10 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
   }, [focusedSongId, filtered, activeFilter]);
 
   const handleFilterChange = (f) => {
+    if (f === 'Artists') {
+      navigate('/artists');
+      return;
+    }
     setActiveFilter(f);
     setSearch('');
     setSelected(null);
