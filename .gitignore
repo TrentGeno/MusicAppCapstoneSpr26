@@ -155,7 +155,11 @@ backend/uploads/*
 backend/covers/*
 !backend/covers/.gitkeep
 
-echo "frontend/release/" >> .gitignore
-echo "frontend/dist/" >> .gitignore
-echo "backend/dist/" >> .gitignore
-echo "backend/build/" >> .gitignore
+
+frontend\release
+backend\build
+
+frontend/release/
+frontend/dist/
+backend/dist/
+backend/build/
