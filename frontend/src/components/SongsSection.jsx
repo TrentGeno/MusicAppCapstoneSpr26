@@ -1,6 +1,6 @@
 import SongCard from './SongCard';
 
-export default function SongsSection({ songs, togglePlay, currentSongId, playlists, fetchLibrary, fetchPlaylists, viewMode }) {
+export default function SongsSection({ songs, togglePlay, currentSongId, playlists, fetchLibrary, focusedSongId, fetchPlaylists, viewMode }) {
   if (songs.length === 0) return <p className="library-empty">No songs found.</p>;
 
   return (
@@ -9,6 +9,8 @@ export default function SongsSection({ songs, togglePlay, currentSongId, playlis
         <SongCard
           key={song.id}
           song={song}
+          cardId={`library-song-${song.id}`}
+          isHighlighted={String(song.id) === String(focusedSongId)}
           togglePlay={togglePlay}
           currentSongId={currentSongId}
           playlists={playlists}

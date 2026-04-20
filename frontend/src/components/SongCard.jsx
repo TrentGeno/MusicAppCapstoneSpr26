@@ -1,98 +1,86 @@
 import { useState } from 'react';
 import AddToPlaylistModal from './modals/AddToPlaylistModal';
 
-export default function SongCard({ song, togglePlay, viewMode, playlists, onDelete, fetchPlaylists }) {
+export default function SongCard({ song, togglePlay, viewMode, playlists, onDelete, fetchPlaylists, cardId, isHighlighted = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [addToPlaylist, setAddToPlaylist] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const isListView = viewMode === 'list'; // ← derive from viewMode
-
-  const renderMenu = () => (
-  <div style={{ position: 'relative', flexShrink: 0 }}>
-    <button
-      onClick={(e) => { e.stopPropagation(); setMenuOpen(m => !m); }}
-      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.1rem', padding: '0 4px' }}
-    >
-      ⋯
-    </button>
-    {menuOpen && (
-      <div
-        style={{ position: 'absolute', right: 0, top: '100%', background: 'var(--bg-card)', borderRadius: 8, padding: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 50, minWidth: 160, border: '1px solid rgba(255,255,255,0.08)' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div
-          style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: 6 }}
-          onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-          onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-          onClick={() => { setAddToPlaylist(true); setMenuOpen(false); }}
-        >
-          Add to Playlist
-        </div>
-        <div
-          style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: 6, color: '#ff4d4d' }}
-          onMouseOver={e => e.currentTarget.style.background = 'rgba(255,77,77,0.1)'}
-          onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-          onClick={() => { setDeleteConfirm(true); setMenuOpen(false); }}
-        >
-          Delete
-        </div>
-      </div>
-    )}
-  </div>
-);
 
   return (
     <>
-      {isListView ? (
-        // ── List layout ──────────────────────────────────────────
-        <div
-          className="song-card song-card--list"
-          onClick={() => togglePlay(song.id)}
-          style={{ cursor: 'pointer' }}
-        >
+      <div
+        id={cardId}
+        className={`music-card ${isHighlighted ? 'song-card-highlight' : ''}`}
+        onClick={() => togglePlay(song.id)}
+        style={{ cursor: 'pointer', padding: '0.75rem 0.75rem 0.5rem 0.75rem', position: 'relative', minWidth: 0 }}
+      >
+        <div style={{
+          width: '100%',
+          aspectRatio: '1',
+          borderRadius: '8px',
+          background: song.gradient,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '0.4rem',
+          overflow: 'hidden',
+          flexShrink: 0
+        }}>
           {song.cover
-            ? <img src={song.cover} alt="cover" className="song-thumb-sm" />
-            : <div className="song-thumb-sm song-thumb-placeholder">{song.name.charAt(0).toUpperCase()}</div>
+            ? <img src={song.cover} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: '2rem', color: 'white', fontWeight: 600 }}>{song.name.charAt(0).toUpperCase()}</span>
           }
-        <div className="song-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <span className="song-name">{song.name}</span>
-          <span className="song-artist">{song.artist}</span>
         </div>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', flexShrink: 0 }}>
-            {song.duration}
-          </span>
-          {renderMenu()}
-        </div>
-      ) : (
-        // ── Grid layout ──────────────────────────────────────────
-        <div
-          className="music-card"
-          onClick={() => togglePlay(song.id)}
-          style={{ cursor: 'pointer', padding: '0.75rem 0.75rem 0.5rem 0.75rem', position: 'relative', minWidth: 0 }}
-        >
-          <div style={{
-            width: '100%', aspectRatio: '1', borderRadius: '8px',
-            background: song.gradient, display: 'flex', alignItems: 'center',
-            justifyContent: 'center', marginBottom: '0.4rem', overflow: 'hidden', flexShrink: 0
-          }}>
-            {song.cover
-              ? <img src={song.cover} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ fontSize: '2rem', color: 'white', fontWeight: 600 }}>{song.name.charAt(0).toUpperCase()}</span>
-            }
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4, minWidth: 0 }}>
+          <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
+            <p style={{
+              margin: 0, fontWeight: 600, fontSize: '0.95rem',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+            }}>
+              {song.name}
+            </p>
+            <p style={{
+              margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+            }}>
+              {song.artist}
+            </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4, minWidth: 0 }}>
-            <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
-              <p style={{ margin: 0, fontWeight: 600, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {song.name}
-              </p>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {song.artist}
-              </p>
-            </div>
-            {renderMenu()}
+
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(m => !m); }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.1rem', padding: '0 4px' }}
+            >
+              ⋯
+            </button>
+            {menuOpen && (
+              <div
+                style={{ position: 'absolute', right: 0, top: '100%', background: 'var(--bg-card)', borderRadius: 8, padding: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 50, minWidth: 160, border: '1px solid rgba(255,255,255,0.08)' }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div
+                  style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: 6 }}
+                  onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                  onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                  onClick={() => { setAddToPlaylist(true); setMenuOpen(false); }}
+                >
+                  Add to Playlist
+                </div>
+                <div
+                  style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: 6, color: '#ff4d4d' }}
+                  onMouseOver={e => e.currentTarget.style.background = 'rgba(255,77,77,0.1)'}
+                  onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                  onClick={() => { setDeleteConfirm(true); setMenuOpen(false); }}
+                >
+                  Delete
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {addToPlaylist && (
         <AddToPlaylistModal
