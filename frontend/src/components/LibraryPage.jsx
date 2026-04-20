@@ -23,15 +23,6 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           s.artist?.toLowerCase().includes(q) ||
           s.album?.toLowerCase().includes(q)
         );
-      case 'Artists': {
-        const map = {};
-        library.forEach(s => {
-          const key = s.artist || 'Unknown Artist';
-          if (!map[key]) map[key] = { name: key, songs: [], cover: s.cover };
-          map[key].songs.push(s);
-        });
-        return Object.values(map).filter(a => a.name.toLowerCase().includes(q));
-      }
       case 'Albums': {
         const map = {};
         library.forEach(s => {
@@ -54,7 +45,6 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
 
   const drillSongs = useMemo(() => {
     if (!selected) return [];
-    if (selected.type === 'artist') return library.filter(s => (s.artist || 'Unknown Artist') === selected.item.name);
     if (selected.type === 'album') return library.filter(s => (s.album || 'Unknown Album') === selected.item.name);
     return [];
   }, [selected, library]);
@@ -73,7 +63,8 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
       case 'Songs':
         return <SongsSection songs={filtered} {...sharedProps} />;
       case 'Artists':
-        return <ArtistsSection artists={filtered} onSelect={setSelected} />;
+        // ArtistsSection handles its own drill-down internally
+        return <ArtistsSection library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} />;
       case 'Albums':
         return <AlbumsSection albums={filtered} onSelect={setSelected} />;
       case 'Recently Added':
@@ -100,7 +91,6 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
 
         {!selected && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {/* Toggle on the left — always takes up space to prevent search bar shifting */}
             <div style={{
               display: 'flex',
               gap: '0.25rem',
@@ -117,7 +107,6 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
                 </button>
               ))}
             </div>
-            {/* Search on the right */}
             <input
               className="library-search"
               type="text"
@@ -129,7 +118,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
         )}
       </div>
 
-      {/* Filter tabs — hidden when drilled in */}
+      {/* Filter tabs — hidden when drilled in (only for Albums since Artists handles its own) */}
       {!selected && (
         <div className="library-filters">
           {FILTERS.map(f => (
@@ -144,20 +133,18 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
         </div>
       )}
 
-      {/* Drill-down view */}
+      {/* Drill-down view — only used for Albums now */}
       {selected ? (
         <div>
           <div className="drill-hero">
             {selected.item.cover
               ? <img src={selected.item.cover} alt={selected.item.name} className="drill-cover" />
-              : <div className="drill-cover-placeholder">
-                  {selected.type === 'artist' ? '🎤' : '💿'}
-                </div>
+              : <div className="drill-cover-placeholder">💿</div>
             }
             <div className="drill-info">
               <span className="drill-type">{selected.type}</span>
               <h2 className="drill-name">{selected.item.name}</h2>
-              {selected.type === 'album' && selected.item.artist && (
+              {selected.item.artist && (
                 <p className="drill-sub">{selected.item.artist}</p>
               )}
               <p className="drill-sub">{drillSongs.length} songs</p>
