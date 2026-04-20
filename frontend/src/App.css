@@ -362,6 +362,11 @@ nav a:hover::after {
     border-color: rgba(185, 103, 255, 0.3);
 }
 
+.song-card-highlight {
+  border-color: rgba(185, 103, 255, 0.8);
+  box-shadow: 0 0 0 2px rgba(185, 103, 255, 0.25), 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
 .card-cover {
     width: 100%;
     aspect-ratio: 1;
@@ -1671,6 +1676,456 @@ nav a:hover::after {
   font-size: 0.85rem;
   color: rgba(255,255,255,0.5);
   margin: 0 0 0.2rem;
+}
+
+.artists-page {
+  padding-top: 1.5rem;
+}
+
+.artist-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1rem;
+}
+
+.artist-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.artist-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(185, 103, 255, 0.5);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+}
+
+.artist-card-image-wrap {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  background: rgba(255,255,255,0.06);
+}
+
+.artist-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.artist-card-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+}
+
+.artist-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artist-card-meta {
+  margin-top: 0.3rem;
+  color: rgba(255,255,255,0.65);
+  font-size: 0.78rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.artist-modal-content {
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: min(900px, 92vw);
+  max-height: 86vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.artist-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.2rem 1.2rem 0.8rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.artist-modal-identity {
+  display: flex;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.artist-modal-identity h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.artist-modal-identity p {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.artist-modal-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.1);
+}
+
+.artist-modal-photo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.artist-modal-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.2rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.artist-tab {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.38rem 0.85rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.artist-tab.active {
+  background: var(--accent-purple);
+  color: #fff;
+  border-color: var(--accent-purple);
+}
+
+.artist-tab-panel {
+  padding: 1rem 1.2rem 1.2rem;
+  overflow: auto;
+}
+
+.artist-bio {
+  margin: 0.8rem 0 0;
+  color: rgba(255,255,255,0.82);
+  line-height: 1.55;
+}
+
+.artist-date-list p {
+  margin: 0.25rem 0;
+  color: rgba(255,255,255,0.86);
+  font-size: 0.86rem;
+}
+
+.artist-discography-feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.artist-retry-btn {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.artist-retry-btn:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+.discography-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.discography-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.discography-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.discography-group-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.discography-group-date {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Album list */
+.album-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.album-row {
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+  background: rgba(255,255,255,0.03);
+}
+
+.album-row.owned {
+  border-color: rgba(185, 103, 255, 0.45);
+}
+
+.album-row.missing {
+  opacity: 0.7;
+}
+
+.album-row-header-static {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  text-align: left;
+  gap: 0.8rem;
+}
+
+.album-row.owned .album-row-header-static {
+  background: rgba(185, 103, 255, 0.15);
+}
+
+.album-row-left {
+  display: flex;
+  align-items: stretch;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.album-cover-image,
+.album-cover-fallback {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.album-cover-image {
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+.album-cover-fallback {
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.75);
+  background: linear-gradient(135deg, rgba(185,103,255,0.4), rgba(96,176,255,0.35));
+}
+
+.album-row-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  gap: 0.22rem;
+}
+
+.album-row-subline {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.album-row-title {
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.album-row-type {
+  font-size: 0.68rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.album-row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.album-owned-count {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.album-row-year {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+/* Tracklist inside expanded album */
+.album-tracklist {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 0.35rem 0;
+}
+
+.tracklist-loading,
+.tracklist-error {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 0.5rem 0.85rem;
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.38rem 0.85rem;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.track-row.owned {
+  cursor: pointer;
+}
+
+.track-row.owned:hover {
+  background: rgba(185, 103, 255, 0.15);
+}
+
+.track-row.missing {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.track-number {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  min-width: 1.4rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.track-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-duration {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.discography-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem;
+}
+
+.discography-item {
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  width: 100%;
+  text-align: left;
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.discography-item.owned {
+  background: rgba(185, 103, 255, 0.28);
+  border-color: rgba(185, 103, 255, 0.6);
+  cursor: pointer;
+}
+
+.discography-item.missing {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.discography-item:disabled {
+  pointer-events: auto;
+}
+
+.discography-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.discography-sub {
+  margin-top: 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 900px) {
+  .artist-modal-content {
+    width: 94vw;
+  }
+
+  .discography-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .song-card-list {

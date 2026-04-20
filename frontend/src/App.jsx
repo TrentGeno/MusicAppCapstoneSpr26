@@ -13,6 +13,7 @@ import CustomizeModal from './components/modals/CustomizeModal';
 import Footer from './components/Footer';
 import RecentlyAddedPage from './components/RecentlyAddedPage';
 import LibraryPage from './components/LibraryPage';
+import ArtistsPage from './components/ArtistsPage';
 import ArtistsSection from './components/ArtistsSection';
 
 export default function App() {
@@ -120,6 +121,7 @@ export default function App() {
             id: track.track_id,
             name: track.title,
             artist: track.artist || 'Unknown Artist',
+            album: track.album,
             gradient: gradients[Math.floor(Math.random() * gradients.length)],
             isPlaying: false,
             url,
@@ -399,15 +401,15 @@ export default function App() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
       <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
-      <main style={{ flex: 1, paddingBottom: currentSongId ? '120px' : '2rem' }}>
-        <Routes>
-          <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-          <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
-          <Route path="/artists" element={<ArtistsSection library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} /> } />
-          <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
-          <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-          <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-        </Routes>
+      <main style={{ flex: 1, paddingBottom: currentSongId ? '72px' : '0' }}>
+      <Routes>
+      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
+      <Route path="/artists" element={<ArtistsPage />} />
+      <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} />} />
+      </Routes>
       </main>
 
       {activeModal === "playlist" && (
