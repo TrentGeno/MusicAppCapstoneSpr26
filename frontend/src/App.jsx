@@ -88,7 +88,7 @@ export default function App() {
   };
 
   const fetchPlaylists = useCallback(() => {
-    fetch('http://localhost:5000/playlists')
+    fetch('http://127.0.0.1:5000/playlists')
       .then(res => res.json())
       .then(data => {
         setPlaylists(data.map(p => ({
@@ -110,11 +110,11 @@ export default function App() {
       `linear-gradient(135deg, ${theme.main}, ${theme.accent2})`,
     ];
 
-    fetch('http://localhost:5000/tracks')
+    fetch('http://127.0.0.1:5000/tracks')
       .then(res => res.json())
       .then(tracks => {
         const loadedSongs = tracks.map(track => {
-          const url = `http://localhost:5000/music/${track.filename}`;
+          const url = `http://127.0.0.1:5000/music/${track.filename}`;
           const audio = new Audio(url);
 
           const song = {
@@ -309,7 +309,7 @@ export default function App() {
     try {
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:5000/upload');
+        xhr.open('POST', 'http://127.0.0.1:5000/upload');
         xhr.upload.onprogress = (event) => {
           if (!event.lengthComputable) return;
           const percent = Math.round((event.loaded / event.total) * 100);
@@ -375,7 +375,7 @@ export default function App() {
   const handleCreatePlaylist = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/playlist', {
+      const response = await fetch('http://127.0.0.1:5000/playlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(playlistData)

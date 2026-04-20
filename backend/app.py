@@ -5,7 +5,6 @@ import time
 from html import unescape
 from datetime import date
 from flask import Flask, request, send_from_directory, jsonify
-from flask_cors import CORS
 from database import db, init_db, find_or_create_user
 from models import User, Track, Playlist
 from flask_cors import CORS
@@ -31,7 +30,7 @@ else:
 
 app = Flask(__name__)
 init_db(app, base_dir=BASE_DIR)  # 👈 pass BASE_DIR here
-CORS(app, origins=["http://localhost:5000", "http://localhost:5173"])
+CORS(app, origins="*")
 
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 COVER_FOLDER = os.path.join(BASE_DIR, "covers")
@@ -916,7 +915,7 @@ def get_tracks():
             if t.cover_art_path:
                 cover_art_full_path = os.path.join(app.config["COVER_FOLDER"], t.cover_art_path)
                 if os.path.exists(cover_art_full_path):
-                    cover_art_url = f"http://localhost:5000/covers/{t.cover_art_path}"
+                    cover_art_url = f"http://127.0.0.1:5000/covers/{t.cover_art_path}"
                 else:
                     # Cover art file is missing - clear the path in database
                     print(f"Cover art file missing for track {t.track_id}, clearing database reference")
@@ -1066,7 +1065,7 @@ def get_artist_discography(artist_mbid):
         track_meta = {
             "title": t.title,
             "track_id": t.track_id,
-            "stream_url": f"http://localhost:5000/music/{quote(os.path.basename(t.file_path))}",
+            "stream_url": f"http://127.0.0.1:5000/music/{quote(os.path.basename(t.file_path))}",
             "release_year": release_year,
             "album": t.album,
         }
@@ -1080,10 +1079,10 @@ def get_artist_discography(artist_mbid):
                 if t.cover_art_path:
                     cover_art_full_path = os.path.join(app.config["COVER_FOLDER"], t.cover_art_path)
                     if os.path.exists(cover_art_full_path):
-                        cover_art_url = f"http://localhost:5000/covers/{quote(t.cover_art_path)}"
+                        cover_art_url = f"http://127.0.0.1:5000/covers/{quote(t.cover_art_path)}"
                 owned_albums[album_key] = {
                     "track_id": t.track_id,
-                    "stream_url": f"http://localhost:5000/music/{quote(os.path.basename(t.file_path))}",
+                    "stream_url": f"http://127.0.0.1:5000/music/{quote(os.path.basename(t.file_path))}",
                     "release_year": release_year,
                     "cover_art_url": cover_art_url,
                 }
@@ -1284,7 +1283,7 @@ def get_release_group_tracks(artist_mbid, release_group_id):
                 continue
             track_meta = {
                 "track_id": t.track_id,
-                "stream_url": f"http://localhost:5000/music/{quote(os.path.basename(t.file_path))}",
+                "stream_url": f"http://127.0.0.1:5000/music/{quote(os.path.basename(t.file_path))}",
             }
             for key in title_match_keys(t.title):
                 if key not in owned_by_title:
@@ -1379,7 +1378,7 @@ def get_playlists():
         ).fetchall()
 
         cover_urls = [
-            f"http://localhost:5000/covers/{quote(row.cover_art_path)}"
+            f"http://127.0.0.1:5000/covers/{quote(row.cover_art_path)}"
             for row in cover_tracks
             if row.cover_art_path and os.path.exists(os.path.join(app.config["COVER_FOLDER"], row.cover_art_path))
         ]
@@ -1434,7 +1433,7 @@ def get_playlist(playlist_id):
         if t.cover_art_path:
             cover_art_full_path = os.path.join(app.config["COVER_FOLDER"], t.cover_art_path)
             if os.path.exists(cover_art_full_path):
-                cover_art_url = f"http://localhost:5000/covers/{quote(t.cover_art_path)}"
+                cover_art_url = f"http://127.0.0.1:5000/covers/{quote(t.cover_art_path)}"
 
         tracks.append({
             "track_id": t.track_id,

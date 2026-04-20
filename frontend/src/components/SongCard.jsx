@@ -109,7 +109,7 @@ export default function SongCard({ song, togglePlay, viewMode, playlists, onDele
                 style={{ flex: 1, background: '#ff4d4d', color: 'var(--text-primary)', border: 'none' }}
                 onClick={async () => {
                   try {
-                    await fetch(`http://localhost:5000/tracks/${song.id}`, { method: 'DELETE' });
+                    await fetch(`http://127.0.0.1:5000/tracks/${song.id}`, { method: 'DELETE' });
                     setDeleteConfirm(false);
                     if (onDelete) onDelete(song.id);
                   } catch (err) {
