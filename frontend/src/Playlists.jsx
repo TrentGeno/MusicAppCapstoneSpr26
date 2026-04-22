@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import EditPlaylistModal from './components/modals/EditPlaylistModal';
 import DeletePlaylistModal from './components/modals/DeletePlaylistModal';
@@ -15,6 +15,13 @@ export default function Playlist({ togglePlay, library, playlistQueueRef, fetchP
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editData, setEditData] = useState({ name: '', description: '', cover: null });
   const [shuffled, setShuffled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [addingTrackId, setAddingTrackId] = useState(null);
+  const [highlightedTrackId, setHighlightedTrackId] = useState(null);
+  const searchRef = useRef(null);
+  const highlightedRowRef = useRef(null);
+  
 
 function shuffle(arr) {
   const a = [...arr];
@@ -55,6 +62,22 @@ function handleShuffle() {
       });
   }, [id]);
 
+  useEffect(() => {
+  function handleClickOutside(e) {
+    if (searchRef.current && !searchRef.current.contains(e.target)) {
+      setSearchOpen(false);
+    }
+  }
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []);
+
+useEffect(() => {
+  if (highlightedTrackId && highlightedRowRef.current) {
+    highlightedRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}, [highlightedTrackId]);
+
   function removeTrack(trackId) {
     fetch(`http://localhost:5000/playlists/${id}/remove-track`, {
       method: 'POST',
@@ -70,6 +93,7 @@ function handleShuffle() {
       })
       .catch(err => console.error('Failed to remove track:', err));
   }
+
 
   function formatDuration(seconds) {
     if (!seconds) return '--:--';
