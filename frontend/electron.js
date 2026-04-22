@@ -1,42 +1,49 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const http = require('http');
+const fs = require('fs');
 
 let backendProcess = null;
+let mainWindow = null;
 
 function startBackend() {
-  const backendPath = app.isPackaged
-    ? path.join(process.resourcesPath, 'backend.exe')
-    : path.join(__dirname, '../backend/dist/backend.exe');
+  const backendPath = path.join(process.resourcesPath, 'backend.exe');
+  if (!fs.existsSync(backendPath)) return;
 
-  backendProcess = spawn(backendPath, [], { detached: false, stdio: 'ignore' });
+  backendProcess = spawn(`"${backendPath}"`, [], {
+    detached: false,
+    shell: true,
+    windowsHide: true,
+    stdio: 'ignore',
+    cwd: process.resourcesPath,
+  });
+}
+function waitForFlask(retries, callback) {
+  http.get('http://127.0.0.1:5000/tracks', () => {
+    callback();
+  }).on('error', () => {
+    if (retries > 0) setTimeout(() => waitForFlask(retries - 1, callback), 500);
+    else callback();
+  });
 }
 
 function createWindow() {
-  if (app.isPackaged) startBackend();
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    show: false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true }
+  });
 
-  setTimeout(() => {
-    const win = new BrowserWindow({
-      width: 1200,
-      height: 800,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-      }
-    });
-
-    if (app.isPackaged) {
-      win.loadFile(path.join(__dirname, 'dist/index.html'));
-    } else {
-      win.loadURL('http://localhost:5173');
-    }
-  }, 2000);
+  startBackend();
+  waitForFlask(40, () => {
+    mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
+    mainWindow.show();
+  });
 }
 
-app.whenReady().then(() => {
-  console.log('App ready');
-  createWindow();
-});
+app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (backendProcess) backendProcess.kill();

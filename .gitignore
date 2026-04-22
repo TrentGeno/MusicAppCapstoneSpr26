@@ -154,3 +154,12 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 backend/covers/*
 !backend/covers/.gitkeep
+
+
+frontend\release
+backend\build
+
+frontend/release/
+frontend/dist/
+backend/dist/
+backend/build/

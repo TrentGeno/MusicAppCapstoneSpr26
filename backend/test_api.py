@@ -4,7 +4,7 @@ import requests
 def test_tracks_api():
     """Test the tracks API to see current tracks and cover art"""
     try:
-        response = requests.get('http://localhost:5000/tracks')
+        response = requests.get('http://127.0.0.1:5000/tracks')
         if response.status_code == 200:
             tracks = response.json()
             print(f'Found {len(tracks)} tracks:')
