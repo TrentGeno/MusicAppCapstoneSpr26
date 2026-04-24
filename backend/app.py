@@ -901,7 +901,7 @@ def serve_cover(filename):
 def get_tracks():
     tracks = Track.query.filter_by(user_id=1).all()
     # Filter tracks to only include those whose files actually exist
-    # and remove duplicates based on normalized song identity
+    # and remove duplicates based on normalized song identity.
     valid_tracks = []
     seen_signatures = set()
 
