@@ -81,7 +81,7 @@ export default function App() {
     '--vinyl-color-1': theme.isDarkMode ? '#1a1a2e' : '#d0d0d0',
     '--vinyl-color-2': theme.isDarkMode ? '#15151f' : '#c0c0c0',
   };
-
+  //67
   const handleThemeSave = (newTheme) => {
     setTheme(newTheme);
     localStorage.setItem('appTheme', JSON.stringify(newTheme));

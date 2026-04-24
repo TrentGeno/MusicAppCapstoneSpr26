@@ -177,7 +177,7 @@ return (
                 ⇄
               </button>
 
-              {/* 3 dot menu */}
+              {/* 3 dot menu. */}
               <div style={{ position: 'relative', zIndex: 50 }}>
                 <button className="btn btn-secondary" onClick={() => setMenuOpen(m => !m)}>⋯</button>
                 {menuOpen && (
