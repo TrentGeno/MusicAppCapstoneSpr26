@@ -1,4 +1,14 @@
-from flask import Flask, jsonify
+# app.py
+# -*- coding: utf-8 -*-
+import os
+import uuid
+import re
+import time
+from html import unescape
+from datetime import date
+from flask import Flask, request, send_from_directory, jsonify
+from database import db, init_db, find_or_create_user
+from models import User, Track, Playlist
 from flask_cors import CORS
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -1485,4 +1495,5 @@ def delete_track(track_id):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+ # When running as a script or PyInstaller EXE, start the server
+ app.run(host="127.0.0.1", port=5000, debug=False)
