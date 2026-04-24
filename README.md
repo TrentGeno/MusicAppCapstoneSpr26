@@ -50,4 +50,4 @@ npm run dev
 
 The application will be available at:
 - Frontend: http://localhost:5174
-- Backend API: http://localhost:5000
+- Backend API: http://127.0.0.1:5000

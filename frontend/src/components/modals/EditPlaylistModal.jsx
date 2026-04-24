@@ -14,7 +14,7 @@ export default function EditPlaylistModal({ playlist, onClose, onSave }) {
       formData.append('description', editData.description);
       if (editData.cover) formData.append('cover', editData.cover);
 
-     const res = await fetch(`http://localhost:5000/playlists/${playlist.playlist_id}`, {
+     const res = await fetch(`http://127.0.0.1:5000/playlists/${playlist.playlist_id}`, {
         method: 'PUT',
         body: formData
       });

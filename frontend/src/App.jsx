@@ -1,21 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
-import { Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import HomePage from './components/Homepage';
-import Playlist from './Playlists';
-import PlaylistsPage from './components/PlaylistsPage';
-import Soundbar from './components/Soundbar';
-import SignInModal from './components/modals/SignInModal';
-import UploadModal from './components/modals/UploadModal';
-import PlaylistModal from './components/modals/PlaylistModal';
-import CustomizeModal from './components/modals/CustomizeModal';
-import Footer from './components/Footer';
-import RecentlyAddedPage from './components/RecentlyAddedPage';
-import LibraryPage from './components/LibraryPage';
-import ArtistsSection from './components/ArtistsSection';
 
-export default function App() {
+export default function OffBeat() {
+  // State management
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
@@ -24,199 +11,8 @@ export default function App() {
   const [activeModal, setActiveModal] = useState(null);
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
-  const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentSongId, setCurrentSongId] = useState(null);
-  const playlistQueueRef = useRef([]);
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('appTheme');
-    return saved ? JSON.parse(saved) : {
-      main: '#b967ff',
-      accent1: '#ff6ec7',
-      accent2: '#05d9ff',
-      isDarkMode: true,
-    };
-  });
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
-  });
 
-  const hexToRgb = (hex) => {
-    const cleaned = hex.replace('#', '').length === 3
-      ? hex.replace('#', '').split('').map((c) => c + c).join('')
-      : hex.replace('#', '');
-    const num = parseInt(cleaned, 16);
-    return [(num >> 16) & 255, (num >> 8) & 255, num & 255].join(',');
-  };
-
-  const themeStyles = {
-    '--main-color': theme.main,
-    '--accent-color': theme.accent1,
-    '--accent-color-secondary': theme.accent2,
-    '--accent-purple': theme.main,
-    '--accent-pink': theme.accent1,
-    '--accent-blue': theme.accent2,
-    '--accent-purple-rgb': hexToRgb(theme.main),
-    '--accent-pink-rgb': hexToRgb(theme.accent1),
-    '--accent-blue-rgb': hexToRgb(theme.accent2),
-    '--glow': `rgba(${hexToRgb(theme.main)}, 0.3)`,
-    '--background': theme.isDarkMode ? '#0d0d14' : '#ffffff',
-    '--background-secondary': theme.isDarkMode ? '#1a1a1a' : '#f5f5f5',
-    '--text-primary': theme.isDarkMode ? '#ffffff' : '#000000',
-    '--text-secondary': theme.isDarkMode ? '#b3b3b3' : '#666666',
-    '--border': theme.isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-    '--seek-bg': theme.isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
-    '--hover-bg': theme.isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-    '--btn-border': theme.isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-    '--btn-border-hover': theme.isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
-    '--progress-bg': theme.isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-    '--card-border': theme.isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-    '--h1-gradient': theme.isDarkMode ? `linear-gradient(135deg, #ffffff, ${theme.main})` : `linear-gradient(135deg, #000000, ${theme.main})`,
-    '--bg-alpha': theme.isDarkMode ? '0.08' : '0',
-    '--bg-gradient': theme.isDarkMode ? `radial-gradient(circle at 20% 50%, rgba(${hexToRgb(theme.main)}, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(${hexToRgb(theme.accent1)}, 0.06) 0%, transparent 50%), radial-gradient(circle at 40% 20%, rgba(${hexToRgb(theme.accent2)}, 0.05) 0%, transparent 50%)` : 'transparent',
-    '--vinyl-color-1': theme.isDarkMode ? '#1a1a2e' : '#d0d0d0',
-    '--vinyl-color-2': theme.isDarkMode ? '#15151f' : '#c0c0c0',
-  };
-
-  const handleThemeSave = (newTheme) => {
-    setTheme(newTheme);
-    localStorage.setItem('appTheme', JSON.stringify(newTheme));
-  };
-
-  const fetchPlaylists = useCallback(() => {
-    fetch('http://localhost:5000/playlists')
-      .then(res => res.json())
-      .then(data => {
-        setPlaylists(data.map(p => ({
-          id: p.playlist_id,
-          name: p.name,
-          description: p.description,
-          songCount: p.track_count,
-          coverUrls: p.cover_urls || []
-        })));
-      })
-      .catch(err => console.error('Failed to load playlists:', err));
-  }, []);
-
-  const fetchLibrary = useCallback(() => {
-    const gradients = [
-      `linear-gradient(135deg, ${theme.main}, ${theme.accent1})`,
-      `linear-gradient(135deg, ${theme.accent1}, ${theme.accent2})`,
-      `linear-gradient(135deg, ${theme.accent2}, ${theme.main})`,
-      `linear-gradient(135deg, ${theme.main}, ${theme.accent2})`,
-    ];
-
-    fetch('http://localhost:5000/tracks')
-      .then(res => res.json())
-      .then(tracks => {
-        const loadedSongs = tracks.map(track => {
-          const url = `http://localhost:5000/music/${track.filename}`;
-          const audio = new Audio(url);
-
-          const song = {
-            id: track.track_id,
-            name: track.title,
-            artist: track.artist || 'Unknown Artist',
-            album: track.album,
-            gradient: gradients[Math.floor(Math.random() * gradients.length)],
-            isPlaying: false,
-            url,
-            audio,
-            duration: '--:--',
-            currentTime: '0:00',
-            progress: 0,
-            cover: track.cover_art_url,
-            repeatMode: 'none',
-          };
-
-          audio.addEventListener('loadedmetadata', () => {
-            const minutes = Math.floor(audio.duration / 60);
-            const seconds = Math.floor(audio.duration % 60).toString().padStart(2, '0');
-            setLibrary(prev =>
-              prev.map(s => s.id === song.id ? { ...s, duration: `${minutes}:${seconds}` } : s)
-            );
-          });
-
-          audio.addEventListener('timeupdate', () => {
-            if (audio.duration) {
-              const pct = (audio.currentTime / audio.duration) * 100;
-              const mins = Math.floor(audio.currentTime / 60);
-              const secs = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
-              setLibrary(prev =>
-                prev.map(s =>
-                  s.id === song.id ? { ...s, progress: pct, currentTime: `${mins}:${secs}` } : s
-                )
-              );
-            }
-          });
-
-          audio.addEventListener('ended', () => {
-            setLibrary(prev => {
-              const index = prev.findIndex(s => s.id === song.id);
-              if (index === -1) return prev;
-              const current = prev[index];
-              const mode = globalRepeatMode !== 'none' ? globalRepeatMode : current.repeatMode;
-
-              if (mode === 'one') {
-                current.audio.currentTime = 0;
-                current.audio.play();
-                const copy = [...prev];
-                copy[index] = { ...current, isPlaying: true, progress: 0, currentTime: '0:00' };
-                return copy;
-              }
-
-              if (mode === 'all') {
-                const nextIndex = (index + 1) % prev.length;
-                return prev.map((s, i) => {
-                  if (i === index) return { ...s, isPlaying: false, progress: 0, currentTime: '0:00' };
-                  if (i === nextIndex) {
-                    s.audio.currentTime = 0;
-                    s.audio.play();
-                    return { ...s, isPlaying: true };
-                  }
-                  return { ...s, isPlaying: false };
-                });
-              }
-
-              const queue = playlistQueueRef.current;
-              if (queue.length > 0) {
-                const currentQueueIndex = queue.indexOf(song.id);
-                const nextId = queue[currentQueueIndex + 1];
-                if (nextId) {
-                  const nextSong = prev.find(s => s.id === nextId);
-                  if (nextSong) {
-                    setTimeout(() => {
-                      nextSong.audio.currentTime = 0;
-                      nextSong.audio.play();
-                      setCurrentSongId(nextId);
-                      setLibrary(l => l.map(s => ({ ...s, isPlaying: s.id === nextId })));
-                    }, 100);
-                  }
-                }
-              }
-
-              return prev.map(s =>
-                s.id === song.id ? { ...s, isPlaying: false, progress: 0, currentTime: '0:00' } : s
-              );
-            });
-          });
-
-          return song;
-        });
-
-        setLibrary(loadedSongs);
-      })
-      .catch(err => console.error('Failed to load tracks:', err));
-  }, [globalRepeatMode, theme]);
-
-  useEffect(() => {
-    fetchLibrary();
-    fetchPlaylists();
-  }, [fetchLibrary, fetchPlaylists]);
-
+  // Modal functions
   const openModal = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
 
@@ -301,29 +97,19 @@ export default function App() {
   const handleUpload = async () => {
     if (uploadedFiles.length === 0 || isUploading) return;
     const formData = new FormData();
-    uploadedFiles.forEach(file => formData.append('file', file));
-    const initialProgress = uploadedFiles.reduce((acc, file) => { acc[getFileKey(file)] = 0; return acc; }, {});
-    setUploadProgress(initialProgress);
-    setIsUploading(true);
+    uploadedFiles.forEach(file => {
+      formData.append('music_files', file);
+    });
+
     try {
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:5000/upload');
-        xhr.upload.onprogress = (event) => {
-          if (!event.lengthComputable) return;
-          const percent = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(prev => {
-            const next = { ...prev };
-            Object.keys(next).forEach(key => { next[key] = percent; });
-            return next;
-          });
-        };
-        xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed with status ${xhr.status}`));
-        xhr.onerror = () => reject(new Error('Network error during upload'));
-        xhr.onabort = () => reject(new Error('Upload aborted'));
-        xhr.send(formData);
+      const response = await fetch('http://localhost:5000/upload', {
+        method: 'POST',
+        body: formData
       });
-      fetchLibrary();
+      const data = await response.json();
+      console.log('Upload response:', data);
+      
+      addSongsToLibrary(uploadedFiles);
       setUploadedFiles([]);
       closeModal();
     } catch (error) {
@@ -374,7 +160,7 @@ export default function App() {
   const handleCreatePlaylist = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/playlist', {
+      const response = await fetch('http://127.0.0.1:5000/playlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(playlistData)
@@ -397,37 +183,166 @@ export default function App() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
-      <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
+    <div className="container">
+      {/* Header */}
+      <header className="header">
+        <div className="logo">OffBeat</div>
+        <nav className="nav">
+          <a href="#library" className="nav-link">Library</a>
+          <a href="#playlists" className="nav-link">Playlists</a>
+          <a href="#artists" className="nav-link">Artists</a>
+        </nav>
+        <button className="btn btn-signin" onClick={() => openModal('signin')}>
+          Sign In
+        </button>
+      </header>
 
-      <main style={{ flex: 1, paddingBottom: currentSongId ? '120px' : '2rem' }}>
-        <Routes>
-          <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-          <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
-          <Route path="/artists" element={<ArtistsSection library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} /> } />
-          <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
-          <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-          <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-        </Routes>
-      </main>
+      {/* Hero Section */}
+      <section className="hero">
+        <div className="hero-content">
+          <div className="hero-text">
+            <h1>Your Personal Music Library</h1>
+            <p className="hero-paragraph">
+              Upload your downloaded music collection and organize it beautifully. 
+              Create playlists, manage your library, and enjoy your favorite tracks offline.
+            </p>
+            <div className="cta-buttons">
+              <button className="btn btn-primary" onClick={() => openModal('upload')}>
+                Upload Music
+              </button>
+              <button className="btn btn-secondary" onClick={() => openModal('playlist')}>
+                Create Playlist
+              </button>
+            </div>
+          </div>
+          <div className="hero-visual">
+            <div className="vinyl-container">
+              <div className="vinyl"></div>
+              <div className="album-art">🎵</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {activeModal === "playlist" && (
-        <PlaylistModal playlistData={playlistData} setPlaylistData={setPlaylistData} handleCreatePlaylist={handleCreatePlaylist} closeModal={closeModal} />
-      )}
-      {activeModal === "signin" && (
-        <SignInModal
-          handleGoogleSignIn={(response) => {
-            const payload = JSON.parse(atob(response.credential.split(".")[1]));
-            const userData = { email: payload.email, name: payload.name, photoURL: payload.picture };
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
-            closeModal();
-          }}
-          closeModal={closeModal}
-        />
-      )}
-      {activeModal === 'customize' && (
-        <CustomizeModal theme={theme} onSave={handleThemeSave} closeModal={closeModal} />
+      {/* Library Section */}
+      <section className="section">
+        <div className="section-header">
+          <h2>Your Library</h2>
+          <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('upload'); }}>
+            Add Songs →
+          </a>
+        </div>
+        <div className="music-grid">
+          {library.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📁</div>
+              <h3>Your library is empty</h3>
+              <p className="empty-text">Upload your music files to get started</p>
+              <button className="btn btn-primary" onClick={() => openModal('upload')}>
+                Upload Now
+              </button>
+            </div>
+          ) : (
+            library.map(song => (
+              <div key={song.id} className="music-card">
+                <div className="card-cover" style={{ background: song.gradient }}>
+                  🎵
+                </div>
+                <div className="card-info">
+                  <h3 className="card-title">{song.name}</h3>
+                  <p className="card-artist">{song.artist}</p>
+                </div>
+                <div className="card-meta">
+                  <button 
+                    className="play-btn" 
+                    onClick={(e) => { e.stopPropagation(); togglePlay(song.id); }}
+                  >
+                    {song.isPlaying ? '⏸' : '▶'}
+                  </button>
+                  <span className="duration">--:--</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* Playlists Section */}
+      <section className="section">
+        <div className="section-header">
+          <h2>Your Playlists</h2>
+          <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('playlist'); }}>
+            New Playlist →
+          </a>
+        </div>
+        <div className="music-grid">
+          {playlists.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">🎧</div>
+              <h3>No playlists yet</h3>
+              <p className="empty-text">Create your first playlist to organize your music</p>
+              <button className="btn btn-primary" onClick={() => openModal('playlist')}>
+                Create Playlist
+              </button>
+            </div>
+          ) : (
+            playlists.map(playlist => (
+              <div key={playlist.id} className="music-card">
+                <div className="card-cover" style={{ background: 'linear-gradient(135deg, #7b68ee, #05d9ff)' }}>
+                  🎧
+                </div>
+                <div className="card-info">
+                  <h3 className="card-title">{playlist.name}</h3>
+                  <p className="card-artist">{playlist.description}</p>
+                </div>
+                <div className="card-meta">
+                  <button className="play-btn">▶</button>
+                  <span className="duration">{playlist.songCount} songs</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* Sign In Modal */}
+      {activeModal === 'signin' && (
+        <div className="modal" onClick={(e) => e.target === e.currentTarget && closeModal()}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Sign In</h2>
+              <button className="close-modal" onClick={closeModal}>×</button>
+            </div>
+            <form onSubmit={handleSignIn}>
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={signInData.email}
+                  onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={signInData.password}
+                  onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                  required
+                />
+              </div>
+              <button type="submit" className="btn btn-primary btn-full-width">
+                Sign In
+              </button>
+              <p className="signup-text">
+                Don't have an account? <a href="#" className="signup-link">Sign up</a>
+              </p>
+            </form>
+          </div>
+        </div>
       )}
       {activeModal === "upload" && (
         <UploadModal

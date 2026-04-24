@@ -43,7 +43,11 @@ function handleShuffle() {
 }
 
   useEffect(() => {
+<<<<<<< HEAD
     fetch(`http://localhost:5000/playlists/${id}`)
+=======
+    fetch(`http://127.0.0.1:5000/playlists/${id}`)
+>>>>>>> 2ba7198a045c49cc5471494ad9a6d770d5a8b66b
       .then(res => res.json())
       .then(data => {
         setPlaylist(data);
@@ -56,7 +60,11 @@ function handleShuffle() {
   }, [id]);
 
   function removeTrack(trackId) {
+<<<<<<< HEAD
     fetch(`http://localhost:5000/playlists/${id}/remove-track`, {
+=======
+    fetch(`http://127.0.0.1:5000/playlists/${id}/remove-track`, {
+>>>>>>> 2ba7198a045c49cc5471494ad9a6d770d5a8b66b
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ track_id: trackId })
