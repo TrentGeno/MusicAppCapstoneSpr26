@@ -1,8 +1,22 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import HomePage from './components/Homepage';
+import Playlist from './Playlists';
+import PlaylistsPage from './components/PlaylistsPage';
+import Soundbar from './components/Soundbar';
+import SignInModal from './components/modals/SignInModal';
+import UploadModal from './components/modals/UploadModal';
+import PlaylistModal from './components/modals/PlaylistModal';
+import CustomizeModal from './components/modals/CustomizeModal';
+import Footer from './components/Footer';
+import RecentlyAddedPage from './components/RecentlyAddedPage';
+import LibraryPage from './components/LibraryPage';
+import ArtistsPage from './components/ArtistsPage';
+import ArtistsSection from './components/ArtistsSection';
 
-export default function OffBeat() {
-  // State management
+export default function App() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
@@ -288,19 +302,29 @@ export default function OffBeat() {
   const handleUpload = async () => {
     if (uploadedFiles.length === 0 || isUploading) return;
     const formData = new FormData();
-    uploadedFiles.forEach(file => {
-      formData.append('music_files', file);
-    });
-
+    uploadedFiles.forEach(file => formData.append('file', file));
+    const initialProgress = uploadedFiles.reduce((acc, file) => { acc[getFileKey(file)] = 0; return acc; }, {});
+    setUploadProgress(initialProgress);
+    setIsUploading(true);
     try {
-      const response = await fetch('http://localhost:5000/upload', {
-        method: 'POST',
-        body: formData
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'http://127.0.0.1:5000/upload');
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(prev => {
+            const next = { ...prev };
+            Object.keys(next).forEach(key => { next[key] = percent; });
+            return next;
+          });
+        };
+        xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed with status ${xhr.status}`));
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.onabort = () => reject(new Error('Upload aborted'));
+        xhr.send(formData);
       });
-      const data = await response.json();
-      console.log('Upload response:', data);
-      
-      addSongsToLibrary(uploadedFiles);
+      fetchLibrary();
       setUploadedFiles([]);
       closeModal();
     } catch (error) {
@@ -374,166 +398,37 @@ export default function OffBeat() {
   };
 
   return (
-    <div className="container">
-      {/* Header */}
-      <header className="header">
-        <div className="logo">OffBeat</div>
-        <nav className="nav">
-          <a href="#library" className="nav-link">Library</a>
-          <a href="#playlists" className="nav-link">Playlists</a>
-          <a href="#artists" className="nav-link">Artists</a>
-        </nav>
-        <button className="btn btn-signin" onClick={() => openModal('signin')}>
-          Sign In
-        </button>
-      </header>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
+      <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <div className="hero-text">
-            <h1>Your Personal Music Library</h1>
-            <p className="hero-paragraph">
-              Upload your downloaded music collection and organize it beautifully. 
-              Create playlists, manage your library, and enjoy your favorite tracks offline.
-            </p>
-            <div className="cta-buttons">
-              <button className="btn btn-primary" onClick={() => openModal('upload')}>
-                Upload Music
-              </button>
-              <button className="btn btn-secondary" onClick={() => openModal('playlist')}>
-                Create Playlist
-              </button>
-            </div>
-          </div>
-          <div className="hero-visual">
-            <div className="vinyl-container">
-              <div className="vinyl"></div>
-              <div className="album-art">🎵</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <main style={{ flex: 1, paddingBottom: currentSongId ? '72px' : '0' }}>
+      <Routes>
+      <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
+      <Route path="/artists" element={<ArtistsPage />} />
+      <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
+      <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} />} />
+      </Routes>
+      </main>
 
-      {/* Library Section */}
-      <section className="section">
-        <div className="section-header">
-          <h2>Your Library</h2>
-          <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('upload'); }}>
-            Add Songs →
-          </a>
-        </div>
-        <div className="music-grid">
-          {library.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📁</div>
-              <h3>Your library is empty</h3>
-              <p className="empty-text">Upload your music files to get started</p>
-              <button className="btn btn-primary" onClick={() => openModal('upload')}>
-                Upload Now
-              </button>
-            </div>
-          ) : (
-            library.map(song => (
-              <div key={song.id} className="music-card">
-                <div className="card-cover" style={{ background: song.gradient }}>
-                  🎵
-                </div>
-                <div className="card-info">
-                  <h3 className="card-title">{song.name}</h3>
-                  <p className="card-artist">{song.artist}</p>
-                </div>
-                <div className="card-meta">
-                  <button 
-                    className="play-btn" 
-                    onClick={(e) => { e.stopPropagation(); togglePlay(song.id); }}
-                  >
-                    {song.isPlaying ? '⏸' : '▶'}
-                  </button>
-                  <span className="duration">--:--</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Playlists Section */}
-      <section className="section">
-        <div className="section-header">
-          <h2>Your Playlists</h2>
-          <a href="#" className="view-all" onClick={(e) => { e.preventDefault(); openModal('playlist'); }}>
-            New Playlist →
-          </a>
-        </div>
-        <div className="music-grid">
-          {playlists.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🎧</div>
-              <h3>No playlists yet</h3>
-              <p className="empty-text">Create your first playlist to organize your music</p>
-              <button className="btn btn-primary" onClick={() => openModal('playlist')}>
-                Create Playlist
-              </button>
-            </div>
-          ) : (
-            playlists.map(playlist => (
-              <div key={playlist.id} className="music-card">
-                <div className="card-cover" style={{ background: 'linear-gradient(135deg, #7b68ee, #05d9ff)' }}>
-                  🎧
-                </div>
-                <div className="card-info">
-                  <h3 className="card-title">{playlist.name}</h3>
-                  <p className="card-artist">{playlist.description}</p>
-                </div>
-                <div className="card-meta">
-                  <button className="play-btn">▶</button>
-                  <span className="duration">{playlist.songCount} songs</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Sign In Modal */}
-      {activeModal === 'signin' && (
-        <div className="modal" onClick={(e) => e.target === e.currentTarget && closeModal()}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Sign In</h2>
-              <button className="close-modal" onClick={closeModal}>×</button>
-            </div>
-            <form onSubmit={handleSignIn}>
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={signInData.email}
-                  onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={signInData.password}
-                  onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
-                  required
-                />
-              </div>
-              <button type="submit" className="btn btn-primary btn-full-width">
-                Sign In
-              </button>
-              <p className="signup-text">
-                Don't have an account? <a href="#" className="signup-link">Sign up</a>
-              </p>
-            </form>
-          </div>
-        </div>
+      {activeModal === "playlist" && (
+        <PlaylistModal playlistData={playlistData} setPlaylistData={setPlaylistData} handleCreatePlaylist={handleCreatePlaylist} closeModal={closeModal} />
+      )}
+      {activeModal === "signin" && (
+        <SignInModal
+          handleGoogleSignIn={(response) => {
+            const payload = JSON.parse(atob(response.credential.split(".")[1]));
+            const userData = { email: payload.email, name: payload.name, photoURL: payload.picture };
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+            closeModal();
+          }}
+          closeModal={closeModal}
+        />
+      )}
+      {activeModal === 'customize' && (
+        <CustomizeModal theme={theme} onSave={handleThemeSave} closeModal={closeModal} />
       )}
       {activeModal === "upload" && (
         <UploadModal
