@@ -1,3 +1,5 @@
+# app.py
+# -*- coding: utf-8 -*-
 import os
 import uuid
 import re
@@ -29,8 +31,8 @@ else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
-init_db(app, base_dir=BASE_DIR)  # 👈 pass BASE_DIR here
-CORS(app, origins="*")
+init_db(app, base_dir=BASE_DIR)  # pass BASE_DIR here
+CORS(app, origins="o")
 
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 COVER_FOLDER = os.path.join(BASE_DIR, "covers")
@@ -1493,4 +1495,5 @@ def delete_track(track_id):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=False)
+ # When running as a script or PyInstaller EXE, start the server
+ app.run(host="127.0.0.1", port=5000, debug=False)
