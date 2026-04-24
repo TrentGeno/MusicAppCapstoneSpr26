@@ -51,3 +51,20 @@ npm run dev
 The application will be available at:
 - Frontend: http://localhost:5174
 - Backend API: http://127.0.0.1:5000
+
+
+
+
+### 
+BUILD WITH ELECTRON 
+
+
+cd frontend
+npm install electron
+npm run electron:build
+
+
+BUILD BACKEND
+cd backend
+pip install pyinstaller
+python -m PyInstaller --onefile --name backend app.py    
