@@ -1,6 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import '../App.css';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useState, useMemo } from 'react';import '../App.css';
 import SongCard from './SongCard';
 import SongsSection from './SongsSection';
 import ArtistsSection from './ArtistsSection';
@@ -9,18 +7,11 @@ import RecentlyAddedSection from './RecentlyAddedSection';
 
 const FILTERS = ['Songs', 'Artists', 'Albums', 'Recently Added'];
 
+// Destructure the new props
 export default function LibraryPage({ library, togglePlay, currentSongId, fetchLibrary, playlists, fetchPlaylists }) {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('Songs');
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
-  const focusedSongId = searchParams.get('focusSongId');
-  const focusedSong = useMemo(() => {
-    if (!focusedSongId) return null;
-    return library.find((song) => String(song.id) === String(focusedSongId)) || null;
-  }, [focusedSongId, library]);
+  const [selected, setSelected] = useState(null); // { type: 'artist'|'album', item }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -31,6 +22,15 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           s.artist?.toLowerCase().includes(q) ||
           s.album?.toLowerCase().includes(q)
         );
+      case 'Artists': {
+        const map = {};
+        library.forEach(s => {
+          const key = s.artist || 'Unknown Artist';
+          if (!map[key]) map[key] = { name: key, songs: [], cover: s.cover };
+          map[key].songs.push(s);
+        });
+        return Object.values(map).filter(a => a.name.toLowerCase().includes(q));
+      }
       case 'Albums': {
         const map = {};
         library.forEach(s => {
@@ -53,49 +53,25 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
 
   const drillSongs = useMemo(() => {
     if (!selected) return [];
+    if (selected.type === 'artist') return library.filter(s => (s.artist || 'Unknown Artist') === selected.item.name);
     if (selected.type === 'album') return library.filter(s => (s.album || 'Unknown Album') === selected.item.name);
     return [];
   }, [selected, library]);
 
-  useEffect(() => {
-    if (!focusedSong) return;
-    setActiveFilter('Songs');
-    setSelected(null);
-    setSearch(focusedSong.name || '');
-  }, [focusedSong]);
-
-  useEffect(() => {
-    if (!focusedSongId) return;
-    const frame = window.requestAnimationFrame(() => {
-      const element = document.getElementById(`library-song-${focusedSongId}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [focusedSongId, filtered, activeFilter]);
-
   const handleFilterChange = (f) => {
-    if (f === 'Artists') {
-      navigate('/artists');
-      return;
-    }
     setActiveFilter(f);
     setSearch('');
     setSelected(null);
-    if (f === 'Artists' || f === 'Albums') setViewMode('grid');
   };
 
   const renderSection = () => {
-    const sharedProps = { togglePlay, currentSongId, fetchLibrary, playlists, fetchPlaylists, viewMode };
+    const sharedProps = { togglePlay, currentSongId, fetchLibrary, playlists, fetchPlaylists };
 
     switch (activeFilter) {
       case 'Songs':
-        return <SongsSection songs={filtered} focusedSongId={focusedSongId} {...sharedProps} />;
+        return <SongsSection songs={filtered} {...sharedProps} />;
       case 'Artists':
-        // ArtistsSection handles its own drill-down internally
-        return <ArtistsSection library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} />;
+        return <ArtistsSection artists={filtered} onSelect={setSelected} />;
       case 'Albums':
         return <AlbumsSection albums={filtered} onSelect={setSelected} />;
       case 'Recently Added':
@@ -119,37 +95,18 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
             {selected ? selected.item.name : 'Your Library'}
           </h1>
         </div>
-
         {!selected && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{
-              display: 'flex',
-              gap: '0.25rem',
-              visibility: (activeFilter === 'Songs' || activeFilter === 'Recently Added') ? 'visible' : 'hidden'
-            }}>
-              {['grid', 'list'].map(mode => (
-                <button
-                  key={mode}
-                  className={`view-toggle-btn ${viewMode === mode ? 'active' : ''}`}
-                  onClick={() => setViewMode(mode)}
-                  title={`${mode} view`}
-                >
-                  {mode === 'grid' ? '⊞' : '☰'}
-                </button>
-              ))}
-            </div>
-            <input
-              className="library-search"
-              type="text"
-              placeholder="Search in library..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
+          <input
+            className="library-search"
+            type="text"
+            placeholder="Search in library..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         )}
       </div>
 
-      {/* Filter tabs — hidden when drilled in (only for Albums since Artists handles its own) */}
+      {/* Filter tabs — hidden when drilled in */}
       {!selected && (
         <div className="library-filters">
           {FILTERS.map(f => (
@@ -164,18 +121,20 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
         </div>
       )}
 
-      {/* Drill-down view — only used for Albums now */}
+      {/* Drill-down view */}
       {selected ? (
         <div>
           <div className="drill-hero">
             {selected.item.cover
               ? <img src={selected.item.cover} alt={selected.item.name} className="drill-cover" />
-              : <div className="drill-cover-placeholder">💿</div>
+              : <div className="drill-cover-placeholder">
+                  {selected.type === 'artist' ? '🎤' : '💿'}
+                </div>
             }
             <div className="drill-info">
               <span className="drill-type">{selected.type}</span>
               <h2 className="drill-name">{selected.item.name}</h2>
-              {selected.item.artist && (
+              {selected.type === 'album' && selected.item.artist && (
                 <p className="drill-sub">{selected.item.artist}</p>
               )}
               <p className="drill-sub">{drillSongs.length} songs</p>
@@ -185,19 +144,16 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           {drillSongs.length === 0 ? (
             <p className="library-empty">No songs found.</p>
           ) : (
-            <div className={viewMode === 'grid' ? 'song-card-grid' : 'song-card-list'}>
+            <div className="song-card-grid">
               {drillSongs.map(song => (
                 <SongCard
                   key={song.id}
                   song={song}
-                  cardId={`library-song-${song.id}`}
-                  isHighlighted={String(song.id) === String(focusedSongId)}
                   togglePlay={togglePlay}
                   currentSongId={currentSongId}
                   playlists={playlists}
                   onDelete={fetchLibrary}
                   fetchPlaylists={fetchPlaylists}
-                  viewMode={viewMode}
                 />
               ))}
             </div>
@@ -208,6 +164,8 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           {renderSection()}
         </div>
       )}
+
+      
     </div>
   );
 }

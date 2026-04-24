@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AddToPlaylistModal from './modals/AddToPlaylistModal';
 
-export default function SongCard({ song, togglePlay, viewMode, playlists, onDelete, fetchPlaylists, cardId, isHighlighted = false }) {
+export default function SongCard({ song, togglePlay, playlists, onDelete, fetchPlaylists }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [addToPlaylist, setAddToPlaylist] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -9,8 +9,7 @@ export default function SongCard({ song, togglePlay, viewMode, playlists, onDele
   return (
     <>
       <div
-        id={cardId}
-        className={`music-card ${isHighlighted ? 'song-card-highlight' : ''}`}
+        className="music-card"
         onClick={() => togglePlay(song.id)}
         style={{ cursor: 'pointer', padding: '0.75rem 0.75rem 0.5rem 0.75rem', position: 'relative', minWidth: 0 }}
       >
@@ -84,24 +83,36 @@ export default function SongCard({ song, togglePlay, viewMode, playlists, onDele
 
       {addToPlaylist && (
         <AddToPlaylistModal
-          song={song}
-          playlists={playlists}
-          onClose={() => setAddToPlaylist(false)}
-          fetchPlaylists={fetchPlaylists}
+            song={song}
+            playlists={playlists}
+            onClose={() => setAddToPlaylist(false)}
+            fetchPlaylists={fetchPlaylists}
         />
       )}
 
       {deleteConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}
           onClick={e => e.stopPropagation()}
         >
-          <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '2rem', minWidth: 320, maxWidth: 400, width: '90%', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+          <div style={{
+            background: 'var(--bg-card)', borderRadius: 16, padding: '2rem',
+            minWidth: 320, maxWidth: 400, width: '90%',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.6)'
+          }}>
             <h3 style={{ margin: '0 0 0.5rem 0' }}>Delete Song</h3>
             <p style={{ margin: '0 0 1.5rem 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               Are you sure you want to delete "{song.name}"? This cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setDeleteConfirm(false)}>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => setDeleteConfirm(false)}
+              >
                 Cancel
               </button>
               <button
@@ -109,7 +120,7 @@ export default function SongCard({ song, togglePlay, viewMode, playlists, onDele
                 style={{ flex: 1, background: '#ff4d4d', color: 'var(--text-primary)', border: 'none' }}
                 onClick={async () => {
                   try {
-                    await fetch(`http://127.0.0.1:5000/tracks/${song.id}`, { method: 'DELETE' });
+                    await fetch(`http://localhost:5000/tracks/${song.id}`, { method: 'DELETE' });
                     setDeleteConfirm(false);
                     if (onDelete) onDelete(song.id);
                   } catch (err) {

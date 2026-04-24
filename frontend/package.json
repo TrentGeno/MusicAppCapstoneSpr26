@@ -41,16 +41,15 @@
     ],
     "extraResources": [
       {
-        "from": "../backend/dist/",
-        "to": "./" 
+        "from": "../backend/dist/backend.exe",
+        "to": "backend.exe"
       }
     ],
     "directories": {
       "output": "release"
     },
     "win": {
-      "target": "nsis",
-      "sign": null
+      "target": "nsis"
     }
   }
 }

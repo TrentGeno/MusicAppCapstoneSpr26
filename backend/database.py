@@ -1,16 +1,14 @@
 import os
-from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import event, text
+from flask import Flask
+from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 db = SQLAlchemy()
 
-
 def init_db(app: Flask, base_dir=None):
     if base_dir is None:
         base_dir = os.path.abspath(os.path.dirname(__file__))
-
     instance_dir = os.path.join(base_dir, 'instance')
     os.makedirs(instance_dir, exist_ok=True)
 
@@ -33,61 +31,50 @@ def init_db(app: Flask, base_dir=None):
         # SQLite ALTER TABLE only supports adding columns.
         conn = db.engine.connect()
         try:
-            # Add missing user columns if they don't exist.
-            user_cols = {r[1] for r in conn.execute(text("PRAGMA table_info(users)"))}
+            # Add missing user columns if they don't exist, ignore if already present.
+            # We use PRAGMA table_info to inspect current schema.
+            user_cols = {r[1] for r in conn.execute(db.text("PRAGMA table_info(users)"))}
 
             if 'profile_picture' not in user_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN profile_picture VARCHAR(500)"))
-                print("Added missing users.profile_picture column")
-
+                conn.execute(db.text("ALTER TABLE users ADD COLUMN profile_picture VARCHAR(500)"))
+                print("✅ Added missing users.profile_picture column")
             if 'oauth_provider' not in user_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN oauth_provider VARCHAR(50)"))
-                print("Added missing users.oauth_provider column")
+                conn.execute(db.text("ALTER TABLE users ADD COLUMN oauth_provider VARCHAR(50)"))
+                print("✅ Added missing users.oauth_provider column")
 
             # Add missing track columns if they don't exist.
-            track_cols = {r[1] for r in conn.execute(text("PRAGMA table_info(tracks)"))}
+            track_cols = {r[1] for r in conn.execute(db.text("PRAGMA table_info(tracks)"))}
 
             if 'duration' not in track_cols:
-                conn.execute(text("ALTER TABLE tracks ADD COLUMN duration INTEGER"))
-                print("Added missing tracks.duration column")
-
+                conn.execute(db.text("ALTER TABLE tracks ADD COLUMN duration INTEGER"))
+                print("✅ Added missing tracks.duration column")
             if 'bitrate' not in track_cols:
-                conn.execute(text("ALTER TABLE tracks ADD COLUMN bitrate INTEGER"))
-                print("Added missing tracks.bitrate column")
-
+                conn.execute(db.text("ALTER TABLE tracks ADD COLUMN bitrate INTEGER"))
+                print("✅ Added missing tracks.bitrate column")
             if 'year' not in track_cols:
-                conn.execute(text("ALTER TABLE tracks ADD COLUMN year VARCHAR(20)"))
-                print("Added missing tracks.year column")
-
+                conn.execute(db.text("ALTER TABLE tracks ADD COLUMN year VARCHAR(20)"))
+                print("✅ Added missing tracks.year column")
             if 'cover_art_path' not in track_cols:
-                conn.execute(text("ALTER TABLE tracks ADD COLUMN cover_art_path VARCHAR(500)"))
-                print("Added missing tracks.cover_art_path column")
-
+                conn.execute(db.text("ALTER TABLE tracks ADD COLUMN cover_art_path VARCHAR(500)"))
+                print("✅ Added missing tracks.cover_art_path column")
             if 'user_id' not in track_cols:
-                conn.execute(
-                    text("ALTER TABLE tracks ADD COLUMN user_id INTEGER REFERENCES users(user_id)")
-                )
-                print("Added missing tracks.user_id column")
+                conn.execute(db.text("ALTER TABLE tracks ADD COLUMN user_id INTEGER REFERENCES users(user_id)"))
+                print("✅ Added missing tracks.user_id column")
 
-            # Add missing playlist columns if they don't exist.
-            playlist_cols = {r[1] for r in conn.execute(text("PRAGMA table_info(playlists)"))}
+            #updates tables missing the new playlist columns, if they don't exist
+            playlist_cols = {r[1] for r in conn.execute(db.text("PRAGMA table_info(playlists)"))}
             if 'created_at' not in playlist_cols:
-                conn.execute(text("ALTER TABLE playlists ADD COLUMN created_at TIMESTAMP"))
-                print("Added missing playlists.created_at column")
+                conn.execute(db.text("ALTER TABLE playlists ADD COLUMN created_at TIMESTAMP"))
+                print("✅ Added missing playlists.created_at column")
 
-            pt_cols = {r[1] for r in conn.execute(text("PRAGMA table_info(playlist_tracks)"))}
+            pt_cols = {r[1] for r in conn.execute(db.text("PRAGMA table_info(playlist_tracks)"))}
             if 'added_at' not in pt_cols:
-                conn.execute(
-                    text(
-                        "ALTER TABLE playlist_tracks "
-                        "ADD COLUMN added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                    )
-                )
+                conn.execute(db.text("ALTER TABLE playlist_tracks ADD COLUMN added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
                 conn.commit()
-                print("Added missing playlist_tracks.added_at column")
+                print("✅ Added missing playlist_tracks.added_at column")
 
         except Exception as e:
-            print(f"Schema migration check failed: {e}")
+            print(f"⚠️ Schema migration check failed: {e}")
         finally:
             conn.close()
 
@@ -101,12 +88,12 @@ def init_db(app: Flask, base_dir=None):
             )
             db.session.add(dummy)
             db.session.commit()
-            print("Dummy user created (user_id=1)")
+            print("✅ Dummy user created (user_id=1)")
         else:
-            print("Dummy user already exists")
+            print("ℹ️ Dummy user already exists")
 
 
-# Fixed: Proper SQLAlchemy usage for find_or_create_user
+# ✅ FIXED: Proper SQLAlchemy version
 def find_or_create_user(email, name, picture):
     from models import User
 

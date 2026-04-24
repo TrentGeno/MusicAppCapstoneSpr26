@@ -7,7 +7,7 @@ export default function AddToPlaylistModal({ song, playlists, onClose, fetchPlay
   async function handleAdd(playlistId) {
     setAdding(true);
     try {
-      await fetch(`http://127.0.0.1:5000/playlist/${playlistId}/add-track`, {
+      await fetch(`http://localhost:5000/playlist/${playlistId}/add-track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ track_id: song.id })

@@ -4,7 +4,7 @@ import requests
 def test_cover_art():
     """Test that cover art can be served"""
     try:
-        response = requests.get('http://127.0.0.1:5000/covers/cover_3.jpg')
+        response = requests.get('http://localhost:5000/covers/cover_3.jpg')
         print(f'Status: {response.status_code}')
         if response.status_code == 200:
             print(f'Cover art served successfully! Size: {len(response.content)} bytes')
