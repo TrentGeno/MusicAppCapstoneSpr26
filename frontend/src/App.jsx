@@ -462,7 +462,7 @@ export default function App() {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <Routes>
       <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
-      <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
+      <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/artists" element={<ArtistsPage />} />
       <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />

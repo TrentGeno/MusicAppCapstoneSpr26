@@ -32,7 +32,7 @@ else:
 
 app = Flask(__name__)
 init_db(app, base_dir=BASE_DIR)  # pass BASE_DIR here
-CORS(app, origins="o")
+CORS(app, origins="*")
 
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 COVER_FOLDER = os.path.join(BASE_DIR, "covers")
