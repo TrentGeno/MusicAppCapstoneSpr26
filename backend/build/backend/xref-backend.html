@@ -24,6 +24,8 @@ imports:
  &#8226;   <a href="#codecs">codecs</a>
  &#8226;   <a href="#collections">collections</a>
  &#8226;   <a href="#copyreg">copyreg</a>
+ &#8226;   <a href="#database">database</a>
+ &#8226;   <a href="#datetime">datetime</a>
  &#8226;   <a href="#encodings">encodings</a>
  &#8226;   <a href="#encodings.aliases">encodings.aliases</a>
  &#8226;   <a href="#encodings.ascii">encodings.ascii</a>
@@ -156,10 +158,12 @@ imports:
  &#8226;   <a href="#google.oauth2">google.oauth2</a>
  &#8226;   <a href="#google.oauth2.id_token">google.oauth2.id_token</a>
  &#8226;   <a href="#heapq">heapq</a>
+ &#8226;   <a href="#html">html</a>
  &#8226;   <a href="#io">io</a>
  &#8226;   <a href="#keyword">keyword</a>
  &#8226;   <a href="#linecache">linecache</a>
  &#8226;   <a href="#locale">locale</a>
+ &#8226;   <a href="#models">models</a>
  &#8226;   <a href="#musicbrainzngs">musicbrainzngs</a>
  &#8226;   <a href="#mutagen">mutagen</a>
  &#8226;   <a href="#mutagen.flac">mutagen.flac</a>
@@ -188,9 +192,11 @@ imports:
  &#8226;   <a href="#sre_parse">sre_parse</a>
  &#8226;   <a href="#stat">stat</a>
  &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#time">time</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#urllib.parse">urllib.parse</a>
+ &#8226;   <a href="#uuid">uuid</a>
  &#8226;   <a href="#warnings">warnings</a>
  &#8226;   <a href="#weakref">weakref</a>
 
@@ -783,6 +789,16 @@ imported by:
  &#8226;   <a href="#flask.testing">flask.testing</a>
  &#8226;   <a href="#flask.typing">flask.typing</a>
  &#8226;   <a href="#flask.wrappers">flask.wrappers</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.cli">flask_sqlalchemy.cli</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.model">flask_sqlalchemy.model</a>
+ &#8226;   <a href="#flask_sqlalchemy.pagination">flask_sqlalchemy.pagination</a>
+ &#8226;   <a href="#flask_sqlalchemy.query">flask_sqlalchemy.query</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
+ &#8226;   <a href="#flask_sqlalchemy.table">flask_sqlalchemy.table</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
  &#8226;   <a href="#google.auth._default">google.auth._default</a>
  &#8226;   <a href="#google.auth.crypt._python_rsa">google.auth.crypt._python_rsa</a>
  &#8226;   <a href="#google.auth.transport.requests">google.auth.transport.requests</a>
@@ -8009,6 +8025,29 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="database"></a>
+  <a target="code" href="///C:/MusicAppCapstoneSpr26/backend/database.py" type="text/plain"><tt>database</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#flask">flask</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#models">models</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
+ &#8226;   <a href="#sqlalchemy.engine">sqlalchemy.engine</a>
+ &#8226;   <a href="#sqlalchemy.event">sqlalchemy.event</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.py">app.py</a>
+ &#8226;   <a href="#models">models</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="dataclasses"></a>
   <a target="code" href="///C:/Program%20Files/Python313/Lib/dataclasses.py" type="text/plain"><tt>dataclasses</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -8034,6 +8073,7 @@ imported by:
  &#8226;   <a href="#_pyrepl.readline">_pyrepl.readline</a>
  &#8226;   <a href="#cryptography.hazmat.primitives.serialization.ssh">cryptography.hazmat.primitives.serialization.ssh</a>
  &#8226;   <a href="#flask.json.provider">flask.json.provider</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
  &#8226;   <a href="#google.auth.aws">google.auth.aws</a>
  &#8226;   <a href="#google.auth.compute_engine._mtls">google.auth.compute_engine._mtls</a>
  &#8226;   <a href="#google.auth.crypt.es">google.auth.crypt.es</a>
@@ -8077,6 +8117,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#_strptime">_strptime</a>
+ &#8226;   <a href="#app.py">app.py</a>
  &#8226;   <a href="#calendar">calendar</a>
  &#8226;   <a href="#click.types">click.types</a>
  &#8226;   <a href="#cryptography.x509.base">cryptography.x509.base</a>
@@ -8105,6 +8146,7 @@ imported by:
  &#8226;   <a href="#http.server">http.server</a>
  &#8226;   <a href="#itsdangerous.exc">itsdangerous.exc</a>
  &#8226;   <a href="#itsdangerous.timed">itsdangerous.timed</a>
+ &#8226;   <a href="#models">models</a>
  &#8226;   <a href="#mutagen.mp4">mutagen.mp4</a>
  &#8226;   <a href="#pyasn1.type.useful">pyasn1.type.useful</a>
  &#8226;   <a href="#requests.models">requests.models</a>
@@ -11552,6 +11594,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#app.py">app.py</a>
+ &#8226;   <a href="#database">database</a>
  &#8226;   <a href="#flask">flask</a>
  &#8226;   <a href="#flask.app">flask.app</a>
  &#8226;   <a href="#flask.blueprints">flask.blueprints</a>
@@ -11576,6 +11619,12 @@ imported by:
  &#8226;   <a href="#flask_cors.core">flask_cors.core</a>
  &#8226;   <a href="#flask_cors.decorator">flask_cors.decorator</a>
  &#8226;   <a href="#flask_cors.extension">flask_cors.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.cli">flask_sqlalchemy.cli</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.pagination">flask_sqlalchemy.pagination</a>
+ &#8226;   <a href="#flask_sqlalchemy.query">flask_sqlalchemy.query</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
 
   </div>
 
@@ -11828,6 +11877,7 @@ imported by:
  &#8226;   <a href="#flask.logging">flask.logging</a>
  &#8226;   <a href="#flask.templating">flask.templating</a>
  &#8226;   <a href="#flask.wrappers">flask.wrappers</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
 
   </div>
 
@@ -12141,6 +12191,7 @@ imported by:
  &#8226;   <a href="#flask.ctx">flask.ctx</a>
  &#8226;   <a href="#flask.helpers">flask.helpers</a>
  &#8226;   <a href="#flask.templating">flask.templating</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
 
   </div>
 
@@ -12362,6 +12413,258 @@ imports:
   <div class="import">
 imported by:
     <a href="#flask_cors">flask_cors</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/__init__.py" type="text/plain"><tt>flask_sqlalchemy</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
+ &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#database">database</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.cli">flask_sqlalchemy.cli</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.model">flask_sqlalchemy.model</a>
+ &#8226;   <a href="#flask_sqlalchemy.pagination">flask_sqlalchemy.pagination</a>
+ &#8226;   <a href="#flask_sqlalchemy.query">flask_sqlalchemy.query</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
+ &#8226;   <a href="#flask_sqlalchemy.table">flask_sqlalchemy.table</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy.cli"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/cli.py" type="text/plain"><tt>flask_sqlalchemy.cli</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#flask">flask</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy.extension"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/extension.py" type="text/plain"><tt>flask_sqlalchemy.extension</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#flask">flask</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.cli">flask_sqlalchemy.cli</a>
+ &#8226;   <a href="#flask_sqlalchemy.model">flask_sqlalchemy.model</a>
+ &#8226;   <a href="#flask_sqlalchemy.pagination">flask_sqlalchemy.pagination</a>
+ &#8226;   <a href="#flask_sqlalchemy.query">flask_sqlalchemy.query</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
+ &#8226;   <a href="#flask_sqlalchemy.table">flask_sqlalchemy.table</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
+ &#8226;   <a href="#sqlalchemy.event">sqlalchemy.event</a>
+ &#8226;   <a href="#sqlalchemy.exc">sqlalchemy.exc</a>
+ &#8226;   <a href="#sqlalchemy.orm">sqlalchemy.orm</a>
+ &#8226;   <a href="#types">types</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#warnings">warnings</a>
+ &#8226;   <a href="#weakref">weakref</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.model">flask_sqlalchemy.model</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy.model"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/model.py" type="text/plain"><tt>flask_sqlalchemy.model</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.query">flask_sqlalchemy.query</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
+ &#8226;   <a href="#sqlalchemy.orm">sqlalchemy.orm</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy.pagination"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/pagination.py" type="text/plain"><tt>flask_sqlalchemy.pagination</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#flask">flask</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#math">math</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
+ &#8226;   <a href="#sqlalchemy.orm">sqlalchemy.orm</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.query">flask_sqlalchemy.query</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy.query"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/query.py" type="text/plain"><tt>flask_sqlalchemy.query</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#flask">flask</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.pagination">flask_sqlalchemy.pagination</a>
+ &#8226;   <a href="#sqlalchemy.exc">sqlalchemy.exc</a>
+ &#8226;   <a href="#sqlalchemy.orm">sqlalchemy.orm</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.model">flask_sqlalchemy.model</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy.record_queries"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/record_queries.py" type="text/plain"><tt>flask_sqlalchemy.record_queries</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#dataclasses">dataclasses</a>
+ &#8226;   <a href="#flask">flask</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#inspect">inspect</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
+ &#8226;   <a href="#sqlalchemy.event">sqlalchemy.event</a>
+ &#8226;   <a href="#time">time</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy.session"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/session.py" type="text/plain"><tt>flask_sqlalchemy.session</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#flask.globals">flask.globals</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
+ &#8226;   <a href="#sqlalchemy.exc">sqlalchemy.exc</a>
+ &#8226;   <a href="#sqlalchemy.orm">sqlalchemy.orm</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy.table"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/table.py" type="text/plain"><tt>flask_sqlalchemy.table</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
+ &#8226;   <a href="#sqlalchemy.sql.schema">sqlalchemy.sql.schema</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="flask_sqlalchemy.track_modifications"></a>
+  <a target="code" href="///C:/Users/taylorb7612/AppData/Roaming/Python/Python313/site-packages/flask_sqlalchemy/track_modifications.py" type="text/plain"><tt>flask_sqlalchemy.track_modifications</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#flask">flask</a>
+ &#8226;   <a href="#flask.signals">flask.signals</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
+ &#8226;   <a href="#sqlalchemy.event">sqlalchemy.event</a>
+ &#8226;   <a href="#sqlalchemy.orm">sqlalchemy.orm</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
 
   </div>
 
@@ -14611,7 +14914,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#html.entities">html.entities</a>
+    <a href="#app.py">app.py</a>
+ &#8226;   <a href="#html.entities">html.entities</a>
  &#8226;   <a href="#http.server">http.server</a>
  &#8226;   <a href="#markupsafe">markupsafe</a>
 
@@ -15158,6 +15462,7 @@ imported by:
  &#8226;   <a href="#flask">flask</a>
  &#8226;   <a href="#flask.cli">flask.cli</a>
  &#8226;   <a href="#flask.testing">flask.testing</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
  &#8226;   <a href="#importlib._bootstrap_external">importlib._bootstrap_external</a>
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#importlib.metadata._adapters">importlib.metadata._adapters</a>
@@ -15583,6 +15888,7 @@ imported by:
  &#8226;   <a href="#dataclasses">dataclasses</a>
  &#8226;   <a href="#flask.app">flask.app</a>
  &#8226;   <a href="#flask.cli">flask.cli</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#importlib.resources._common">importlib.resources._common</a>
  &#8226;   <a href="#jinja2.async_utils">jinja2.async_utils</a>
@@ -17208,6 +17514,7 @@ imported by:
  &#8226;   <a href="#asyncio.windows_events">asyncio.windows_events</a>
  &#8226;   <a href="#click._termui_impl">click._termui_impl</a>
  &#8226;   <a href="#cryptography.hazmat.primitives.asymmetric.rsa">cryptography.hazmat.primitives.asymmetric.rsa</a>
+ &#8226;   <a href="#flask_sqlalchemy.pagination">flask_sqlalchemy.pagination</a>
  &#8226;   <a href="#fractions">fractions</a>
  &#8226;   <a href="#jinja2.filters">jinja2.filters</a>
  &#8226;   <a href="#pyasn1.type.univ">pyasn1.type.univ</a>
@@ -17258,6 +17565,24 @@ imported by:
 imported by:
     <a href="#multiprocessing.heap">multiprocessing.heap</a>
  &#8226;   <a href="#multiprocessing.shared_memory">multiprocessing.shared_memory</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="models"></a>
+  <a target="code" href="///C:/MusicAppCapstoneSpr26/backend/models.py" type="text/plain"><tt>models</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#database">database</a>
+ &#8226;   <a href="#datetime">datetime</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.py">app.py</a>
+ &#8226;   <a href="#database">database</a>
 
   </div>
 
@@ -19737,6 +20062,7 @@ imported by:
  &#8226;   <a href="#ctypes.macholib.dyld">ctypes.macholib.dyld</a>
  &#8226;   <a href="#ctypes.util">ctypes.util</a>
  &#8226;   <a href="#curses">curses</a>
+ &#8226;   <a href="#database">database</a>
  &#8226;   <a href="#dotenv.main">dotenv.main</a>
  &#8226;   <a href="#email.utils">email.utils</a>
  &#8226;   <a href="#flask.app">flask.app</a>
@@ -19747,6 +20073,7 @@ imported by:
  &#8226;   <a href="#flask.sansio.app">flask.sansio.app</a>
  &#8226;   <a href="#flask.sansio.blueprints">flask.sansio.blueprints</a>
  &#8226;   <a href="#flask.sansio.scaffold">flask.sansio.scaffold</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
  &#8226;   <a href="#fnmatch">fnmatch</a>
  &#8226;   <a href="#genericpath">genericpath</a>
  &#8226;   <a href="#getopt">getopt</a>
@@ -21807,6 +22134,7 @@ imported by:
  &#8226;   <a href="#encodings.idna">encodings.idna</a>
  &#8226;   <a href="#flask.cli">flask.cli</a>
  &#8226;   <a href="#flask_cors.core">flask_cors.core</a>
+ &#8226;   <a href="#flask_sqlalchemy.model">flask_sqlalchemy.model</a>
  &#8226;   <a href="#fnmatch">fnmatch</a>
  &#8226;   <a href="#fractions">fractions</a>
  &#8226;   <a href="#ftplib">ftplib</a>
@@ -26788,6 +27116,14 @@ imports:
   <div class="import">
 imported by:
     <a href="#app.py">app.py</a>
+ &#8226;   <a href="#database">database</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.model">flask_sqlalchemy.model</a>
+ &#8226;   <a href="#flask_sqlalchemy.pagination">flask_sqlalchemy.pagination</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
+ &#8226;   <a href="#flask_sqlalchemy.table">flask_sqlalchemy.table</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
  &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
  &#8226;   <a href="#sqlalchemy.connectors">sqlalchemy.connectors</a>
  &#8226;   <a href="#sqlalchemy.connectors.aioodbc">sqlalchemy.connectors.aioodbc</a>
@@ -28854,7 +29190,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#sqlalchemy">sqlalchemy</a>
+    <a href="#database">database</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
  &#8226;   <a href="#sqlalchemy.connectors.asyncio">sqlalchemy.connectors.asyncio</a>
  &#8226;   <a href="#sqlalchemy.connectors.pyodbc">sqlalchemy.connectors.pyodbc</a>
  &#8226;   <a href="#sqlalchemy.dialects.mssql.base">sqlalchemy.dialects.mssql.base</a>
@@ -29573,7 +29910,11 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#sqlalchemy">sqlalchemy</a>
+    <a href="#database">database</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
  &#8226;   <a href="#sqlalchemy.engine.base">sqlalchemy.engine.base</a>
  &#8226;   <a href="#sqlalchemy.engine.create">sqlalchemy.engine.create</a>
  &#8226;   <a href="#sqlalchemy.engine.default">sqlalchemy.engine.default</a>
@@ -29772,7 +30113,10 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#sqlalchemy">sqlalchemy</a>
+    <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.query">flask_sqlalchemy.query</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
  &#8226;   <a href="#sqlalchemy.dialects.mssql.base">sqlalchemy.dialects.mssql.base</a>
  &#8226;   <a href="#sqlalchemy.dialects.mssql.pyodbc">sqlalchemy.dialects.mssql.pyodbc</a>
  &#8226;   <a href="#sqlalchemy.dialects.mysql.base">sqlalchemy.dialects.mysql.base</a>
@@ -30323,7 +30667,13 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#sqlalchemy">sqlalchemy</a>
+    <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.model">flask_sqlalchemy.model</a>
+ &#8226;   <a href="#flask_sqlalchemy.pagination">flask_sqlalchemy.pagination</a>
+ &#8226;   <a href="#flask_sqlalchemy.query">flask_sqlalchemy.query</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
+ &#8226;   <a href="#sqlalchemy">sqlalchemy</a>
  &#8226;   <a href="#sqlalchemy.ext.asyncio.session">sqlalchemy.ext.asyncio.session</a>
  &#8226;   <a href="#sqlalchemy.ext.baked">sqlalchemy.ext.baked</a>
  &#8226;   <a href="#sqlalchemy.orm">sqlalchemy.orm</a>
@@ -33611,7 +33961,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#sqlalchemy.dialects._typing">sqlalchemy.dialects._typing</a>
+    <a href="#flask_sqlalchemy.table">flask_sqlalchemy.table</a>
+ &#8226;   <a href="#sqlalchemy.dialects._typing">sqlalchemy.dialects._typing</a>
  &#8226;   <a href="#sqlalchemy.dialects.mysql.base">sqlalchemy.dialects.mysql.base</a>
  &#8226;   <a href="#sqlalchemy.dialects.postgresql.dml">sqlalchemy.dialects.postgresql.dml</a>
  &#8226;   <a href="#sqlalchemy.dialects.postgresql.ext">sqlalchemy.dialects.postgresql.ext</a>
@@ -35726,6 +36077,7 @@ imported by:
  &#8226;   <a href="#_pyrepl.unix_console">_pyrepl.unix_console</a>
  &#8226;   <a href="#_pyrepl.windows_console">_pyrepl.windows_console</a>
  &#8226;   <a href="#_strptime">_strptime</a>
+ &#8226;   <a href="#app.py">app.py</a>
  &#8226;   <a href="#asyncio.base_events">asyncio.base_events</a>
  &#8226;   <a href="#asyncio.windows_events">asyncio.windows_events</a>
  &#8226;   <a href="#click._termui_impl">click._termui_impl</a>
@@ -35735,6 +36087,7 @@ imported by:
  &#8226;   <a href="#email._parseaddr">email._parseaddr</a>
  &#8226;   <a href="#email.generator">email.generator</a>
  &#8226;   <a href="#email.utils">email.utils</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
  &#8226;   <a href="#gc">gc</a>
  &#8226;   <a href="#google.auth._agent_identity_utils">google.auth._agent_identity_utils</a>
  &#8226;   <a href="#google.auth._exponential_backoff">google.auth._exponential_backoff</a>
@@ -36089,6 +36442,7 @@ imported by:
  &#8226;   <a href="#flask.config">flask.config</a>
  &#8226;   <a href="#flask.ctx">flask.ctx</a>
  &#8226;   <a href="#flask.testing">flask.testing</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
  &#8226;   <a href="#functools">functools</a>
  &#8226;   <a href="#http.cookies">http.cookies</a>
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
@@ -36254,6 +36608,16 @@ imported by:
  &#8226;   <a href="#flask.testing">flask.testing</a>
  &#8226;   <a href="#flask.typing">flask.typing</a>
  &#8226;   <a href="#flask.wrappers">flask.wrappers</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.cli">flask_sqlalchemy.cli</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
+ &#8226;   <a href="#flask_sqlalchemy.model">flask_sqlalchemy.model</a>
+ &#8226;   <a href="#flask_sqlalchemy.pagination">flask_sqlalchemy.pagination</a>
+ &#8226;   <a href="#flask_sqlalchemy.query">flask_sqlalchemy.query</a>
+ &#8226;   <a href="#flask_sqlalchemy.record_queries">flask_sqlalchemy.record_queries</a>
+ &#8226;   <a href="#flask_sqlalchemy.session">flask_sqlalchemy.session</a>
+ &#8226;   <a href="#flask_sqlalchemy.table">flask_sqlalchemy.table</a>
+ &#8226;   <a href="#flask_sqlalchemy.track_modifications">flask_sqlalchemy.track_modifications</a>
  &#8226;   <a href="#functools">functools</a>
  &#8226;   <a href="#google.auth._default">google.auth._default</a>
  &#8226;   <a href="#google.auth._helpers">google.auth._helpers</a>
@@ -38373,7 +38737,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#click.types">click.types</a>
+    <a href="#app.py">app.py</a>
+ &#8226;   <a href="#click.types">click.types</a>
  &#8226;   <a href="#flask.json.provider">flask.json.provider</a>
  &#8226;   <a href="#flask.json.tag">flask.json.tag</a>
  &#8226;   <a href="#sqlalchemy.dialects.mssql.base">sqlalchemy.dialects.mssql.base</a>
@@ -38450,6 +38815,8 @@ imported by:
  &#8226;   <a href="#email.utils">email.utils</a>
  &#8226;   <a href="#enum">enum</a>
  &#8226;   <a href="#flask">flask</a>
+ &#8226;   <a href="#flask_sqlalchemy">flask_sqlalchemy</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
  &#8226;   <a href="#functools">functools</a>
  &#8226;   <a href="#getpass">getpass</a>
  &#8226;   <a href="#gettext">gettext</a>
@@ -38601,6 +38968,7 @@ imported by:
  &#8226;   <a href="#copy">copy</a>
  &#8226;   <a href="#flask.app">flask.app</a>
  &#8226;   <a href="#flask.json.provider">flask.json.provider</a>
+ &#8226;   <a href="#flask_sqlalchemy.extension">flask_sqlalchemy.extension</a>
  &#8226;   <a href="#functools">functools</a>
  &#8226;   <a href="#gzip">gzip</a>
  &#8226;   <a href="#inspect">inspect</a>
