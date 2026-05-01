@@ -6,33 +6,57 @@ export default function SongCard({ song, togglePlay, viewMode, playlists, onDele
   const [addToPlaylist, setAddToPlaylist] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  const isList = viewMode === 'list';
+
   return (
     <>
       <div
         id={cardId}
         className={`music-card ${isHighlighted ? 'song-card-highlight' : ''}`}
         onClick={() => togglePlay(song.id)}
-        style={{ cursor: 'pointer', padding: '0.75rem 0.75rem 0.5rem 0.75rem', position: 'relative', minWidth: 0 }}
+        style={{
+          cursor: 'pointer',
+          padding: isList ? '0.5rem 0.75rem' : '0.75rem 0.75rem 0.5rem 0.75rem',
+          position: 'relative',
+          minWidth: 0,
+          // List mode: horizontal row layout
+          ...(isList && {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+          }),
+        }}
       >
+        {/* Cover art */}
         <div style={{
-          width: '100%',
-          aspectRatio: '1',
           borderRadius: '8px',
           background: song.gradient,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: '0.4rem',
           overflow: 'hidden',
-          flexShrink: 0
+          flexShrink: 0,
+          ...(isList
+            ? { width: '48px', height: '48px' }
+            : { width: '100%', aspectRatio: '1', marginBottom: '0.4rem' }
+          ),
         }}>
           {song.cover
             ? <img src={song.cover} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ fontSize: '2rem', color: 'white', fontWeight: 600 }}>{song.name.charAt(0).toUpperCase()}</span>
+            : <span style={{ fontSize: isList ? '1.2rem' : '2rem', color: 'white', fontWeight: 600 }}>
+                {song.name.charAt(0).toUpperCase()}
+              </span>
           }
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4, minWidth: 0 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: isList ? 'center' : 'flex-start',
+          justifyContent: 'space-between',
+          gap: 4,
+          minWidth: 0,
+          ...(isList && { flex: 1 }),
+        }}>
           <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
             <p style={{
               margin: 0, fontWeight: 600, fontSize: '0.95rem',
@@ -82,6 +106,7 @@ export default function SongCard({ song, togglePlay, viewMode, playlists, onDele
         </div>
       </div>
 
+      {/* Modals unchanged */}
       {addToPlaylist && (
         <AddToPlaylistModal
           song={song}
