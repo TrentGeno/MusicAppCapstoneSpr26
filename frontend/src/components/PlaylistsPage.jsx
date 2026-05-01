@@ -1,7 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
-export default function PlaylistsPage({ playlists, openModal }) {
+export default function PlaylistsPage({ playlists, openModal, fetchPlaylists }) {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchPlaylists();
+  }, []);
 
   return (
     <div style={{ padding: '2rem 3rem', color: 'white', minHeight: '100vh' }}>
