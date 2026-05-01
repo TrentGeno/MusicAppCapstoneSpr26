@@ -1,5 +1,11 @@
 import React from "react";
 
+const WaveformIcon = ({ size = 18, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12h2M6 6v12M10 3v18M14 7v10M18 5v14M22 12h-2" />
+  </svg>
+);
+
 export default function Soundbar({
   toggleMute,
   isMuted,
@@ -13,7 +19,9 @@ export default function Soundbar({
   currentSongId,
   globalRepeatMode,
   seek,
-  onClose
+  onClose,
+  onOpenVisualizer,
+  onOpenMiniPlayer
 }) {
   const currentSong = library.find(s => s.id === currentSongId);
   const repeatMode = globalRepeatMode || 'none';
@@ -129,6 +137,28 @@ export default function Soundbar({
           {Math.round((isMuted ? 0 : volume) * 100)}%
         </span>
       </div>
+      {/* Visualizer button */}
+        <button
+          onClick={onOpenVisualizer}
+          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.6, flexShrink: 0, transition: 'opacity 0.2s', padding: '4px' }}
+          onMouseOver={e => e.currentTarget.style.opacity = 1}
+          onMouseOut={e => e.currentTarget.style.opacity = 0.6}
+          title="Open visualizer"
+        >
+          <WaveformIcon size={18} color="var(--text-secondary)" />
+        </button>
+      {/* Mini player pop-out button (only shown in Electron) */}
+      {window.electronAPI && onOpenMiniPlayer && (
+        <button
+          onClick={onOpenMiniPlayer}
+          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', opacity: 0.6, flexShrink: 0, transition: 'opacity 0.2s', padding: '4px' }}
+          onMouseOver={e => e.currentTarget.style.opacity = 1}
+          onMouseOut={e => e.currentTarget.style.opacity = 0.6}
+          title="Pop out mini player"
+        >
+          ⧉
+        </button>
+      )}
       {/* Close button */}
         <button
           onClick={onClose}

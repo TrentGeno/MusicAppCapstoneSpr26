@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HomePage from './components/Homepage';
 import Playlist from './Playlists';
@@ -15,8 +15,12 @@ import RecentlyAddedPage from './components/RecentlyAddedPage';
 import LibraryPage from './components/LibraryPage';
 import ArtistsPage from './components/ArtistsPage';
 import ArtistsSection from './components/ArtistsSection';
+import VisualizerPage from './components/VisualizerPage';
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isVisualizerRoute = location.pathname === '/visualizer';
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
@@ -397,11 +401,65 @@ export default function App() {
     setLibrary(prev => prev.map(s => ({ ...s, isPlaying: false })));
   };
 
+  const openMiniPlayer = () => {
+    if (window.electronAPI) {
+      window.electronAPI.send('open-mini-player');
+    }
+  };
+
+  // Push current playback state to the mini player whenever it changes
+  useEffect(() => {
+    if (!window.electronAPI) return;
+    const currentSong = library.find(s => s.id === currentSongId);
+    const state = currentSong ? {
+      songName: currentSong.name,
+      artist: currentSong.artist,
+      cover: currentSong.cover || null,
+      gradient: currentSong.gradient,
+      initial: currentSong.name?.charAt(0)?.toUpperCase() || '?',
+      isPlaying: currentSong.isPlaying,
+      progress: currentSong.progress,
+      currentTime: currentSong.currentTime,
+      duration: currentSong.duration,
+      volume,
+      isMuted,
+      repeatMode: globalRepeatMode,
+      hasSong: true,
+    } : {
+      songName: 'No song playing', artist: '', cover: null, gradient: null,
+      initial: '?', isPlaying: false, progress: 0, currentTime: '0:00',
+      duration: '--:--', volume, isMuted, repeatMode: globalRepeatMode, hasSong: false,
+    };
+    window.electronAPI.send('main-state-update', state);
+  }, [library, currentSongId, volume, isMuted, globalRepeatMode]);
+
+  // Listen for commands from the mini player
+  useEffect(() => {
+    if (!window.electronAPI) return;
+    const handler = window.electronAPI.on('mini-player-command', (data) => {
+      switch (data.action) {
+        case 'play-pause': handleSoundbarPlay(); break;
+        case 'prev':        replaySong();          break;
+        case 'next':        skipSong();            break;
+        case 'toggle-repeat': toggleRepeat();      break;
+        case 'toggle-mute':   toggleMute();        break;
+        case 'volume':      changeVolume(data.value); break;
+        case 'seek':        if (currentSongId) seek(currentSongId, data.value); break;
+        default: break;
+      }
+    });
+    return () => {
+      if (handler) window.electronAPI.off('mini-player-command', handler);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSongId, library, volume, isMuted, globalRepeatMode]);
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
       <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
 
-      <main style={{ flex: 1, paddingBottom: currentSongId ? '72px' : '0' }}>
+      <main style={{ flex: 1, minHeight: 0, paddingBottom: currentSongId ? '72px' : '0', display: 'flex', flexDirection: 'column', overflow: isVisualizerRoute ? 'hidden' : 'visible' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <Routes>
       <Route path="/" element={<HomePage openModal={openModal} library={library} togglePlay={togglePlay} playlists={playlists} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/playlists" element={<PlaylistsPage playlists={playlists} openModal={openModal} />} />
@@ -409,7 +467,9 @@ export default function App() {
       <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} />} />
+      <Route path="/visualizer" element={<div style={{ flex: 1, minHeight: 0, display: 'flex' }}><VisualizerPage currentSong={library.find(s => s.id === currentSongId)} /></div>} />
       </Routes>
+      </div>
       </main>
 
       {activeModal === "playlist" && (
@@ -461,9 +521,11 @@ export default function App() {
           globalRepeatMode={globalRepeatMode}
           seek={seek}
           onClose={handleCloseSoundbar}
+          onOpenVisualizer={() => navigate('/visualizer')}
+          onOpenMiniPlayer={openMiniPlayer}
         />
       )}
-      <Footer currentSongId={currentSongId} />
+      {!isVisualizerRoute && <Footer currentSongId={currentSongId} />}
     </div>
   );
 }

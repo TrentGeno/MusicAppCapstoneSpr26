@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OffBeat Mini Player</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 300px;
+      height: 120px;
+      background: #0d0d14;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Thin drag region at top */
+    .drag-bar {
+      height: 6px;
+      background: #151520;
+      -webkit-app-region: drag;
+      width: 100%;
+      flex-shrink: 0;
+    }
+
+    /* Main row: art + info + controls */
+    .player {
+      display: flex;
+      align-items: center;
+      padding: 6px 10px 4px;
+      gap: 8px;
+      height: 68px;
+      -webkit-app-region: no-drag;
+    }
+
+    .art {
+      width: 46px;
+      height: 46px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #b967ff, #ff6ec7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      overflow: hidden;
+    }
+
+    .art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .info {
+      flex: 1;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .song-name {
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #fff;
+    }
+
+    .artist-name {
+      font-size: 0.68rem;
+      color: #b3b3b3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.85rem;
+      opacity: 0.75;
+      padding: 3px;
+      -webkit-app-region: no-drag;
+      transition: opacity 0.15s;
+      line-height: 1;
+    }
+
+    .ctrl-btn:hover { opacity: 1; }
+
+    .play-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #b967ff, #ff6ec7);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      -webkit-app-region: no-drag;
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+
+    .play-btn:hover { transform: scale(1.1); }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: #b3b3b3;
+      cursor: pointer;
+      font-size: 0.85rem;
+      opacity: 0.55;
+      padding: 3px;
+      -webkit-app-region: no-drag;
+      transition: opacity 0.15s;
+      line-height: 1;
+    }
+
+    .close-btn:hover { opacity: 1; }
+
+    /* Seek bar row */
+    .seek-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 10px;
+      height: 18px;
+      -webkit-app-region: no-drag;
+    }
+
+    .time {
+      font-size: 0.62rem;
+      color: #b3b3b3;
+      flex-shrink: 0;
+      min-width: 26px;
+    }
+
+    .time.right { text-align: right; }
+
+    .seek-track {
+      flex: 1;
+      height: 3px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .seek-fill {
+      height: 100%;
+      background: #fff;
+      border-radius: 2px;
+      width: 0%;
+      pointer-events: none;
+    }
+
+    /* Volume row */
+    .vol-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px 0;
+      height: 22px;
+      -webkit-app-region: no-drag;
+    }
+
+    .vol-icon {
+      font-size: 0.72rem;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+      flex-shrink: 0;
+    }
+
+    .vol-slider {
+      flex: 1;
+      height: 3px;
+      accent-color: #b967ff;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+    }
+
+    .vol-pct {
+      font-size: 0.62rem;
+      color: #b3b3b3;
+      min-width: 28px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="drag-bar"></div>
+
+  <div class="player">
+    <div class="art" id="art">
+      <span id="art-initial">?</span>
+    </div>
+
+    <div class="info">
+      <div class="song-name" id="song-name">No song playing</div>
+      <div class="artist-name" id="artist-name"></div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="btn-prev" title="Previous">⏮</button>
+      <button class="play-btn" id="btn-play" title="Play / Pause">▶</button>
+      <button class="ctrl-btn" id="btn-next" title="Next">⏭</button>
+      <button class="ctrl-btn" id="btn-repeat" title="Repeat mode">⟳</button>
+      <button class="close-btn" id="btn-close" title="Close mini player">✕</button>
+    </div>
+  </div>
+
+  <div class="seek-row">
+    <span class="time" id="current-time">0:00</span>
+    <div class="seek-track" id="seek-track">
+      <div class="seek-fill" id="seek-fill"></div>
+    </div>
+    <span class="time right" id="duration">--:--</span>
+  </div>
+
+  <div class="vol-row">
+    <span class="vol-icon" id="vol-icon" title="Toggle mute">🔊</span>
+    <input type="range" class="vol-slider" id="vol-slider" min="0" max="1" step="0.01" value="1" />
+    <span class="vol-pct" id="vol-pct">100%</span>
+  </div>
+
+  <script>
+    const api = window.electronAPI;
+
+    // ── UI element refs ───────────────────────────────────────────────────────
+    const artEl       = document.getElementById('art');
+    const artInitial  = document.getElementById('art-initial');
+    const songNameEl  = document.getElementById('song-name');
+    const artistEl    = document.getElementById('artist-name');
+    const btnPlay     = document.getElementById('btn-play');
+    const seekFill    = document.getElementById('seek-fill');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl  = document.getElementById('duration');
+    const volSlider   = document.getElementById('vol-slider');
+    const volPct      = document.getElementById('vol-pct');
+    const volIcon     = document.getElementById('vol-icon');
+    const btnRepeat   = document.getElementById('btn-repeat');
+    const seekTrack   = document.getElementById('seek-track');
+
+    // ── Render state ──────────────────────────────────────────────────────────
+    function updateUI(s) {
+      // Album art
+      if (s.cover) {
+        artEl.style.background = 'none';
+        artInitial.style.display = 'none';
+        let img = artEl.querySelector('img');
+        if (!img) { img = document.createElement('img'); artEl.appendChild(img); }
+        img.src = s.cover;
+      } else {
+        artEl.style.background = s.gradient || 'linear-gradient(135deg, #b967ff, #ff6ec7)';
+        artInitial.style.display = '';
+        artInitial.textContent = s.initial || '?';
+        const img = artEl.querySelector('img');
+        if (img) img.remove();
+      }
+
+      songNameEl.textContent  = s.songName || 'No song playing';
+      artistEl.textContent    = s.artist   || '';
+      btnPlay.textContent     = s.isPlaying ? '⏸' : '▶';
+      seekFill.style.width    = (s.progress || 0) + '%';
+      currentTimeEl.textContent = s.currentTime || '0:00';
+      durationEl.textContent  = s.duration || '--:--';
+
+      const vol = s.isMuted ? 0 : (s.volume != null ? s.volume : 1);
+      volSlider.value         = vol;
+      volPct.textContent      = Math.round(vol * 100) + '%';
+      volIcon.textContent     = vol === 0 ? '🔇' : vol < 0.5 ? '🔉' : '🔊';
+
+      if (s.repeatMode === 'all') {
+        btnRepeat.textContent = '🔁'; btnRepeat.title = 'Repeat: All';
+      } else if (s.repeatMode === 'one') {
+        btnRepeat.textContent = '🔂'; btnRepeat.title = 'Repeat: One';
+      } else {
+        btnRepeat.textContent = '⟳'; btnRepeat.title = 'Repeat: Off';
+      }
+    }
+
+    // ── Controls → main process ───────────────────────────────────────────────
+    document.getElementById('btn-prev').addEventListener('click', () =>
+      api.send('mini-player-command', { action: 'prev' }));
+
+    btnPlay.addEventListener('click', () =>
+      api.send('mini-player-command', { action: 'play-pause' }));
+
+    document.getElementById('btn-next').addEventListener('click', () =>
+      api.send('mini-player-command', { action: 'next' }));
+
+    btnRepeat.addEventListener('click', () =>
+      api.send('mini-player-command', { action: 'toggle-repeat' }));
+
+    document.getElementById('btn-close').addEventListener('click', () =>
+      api.send('close-mini-player'));
+
+    volIcon.addEventListener('click', () =>
+      api.send('mini-player-command', { action: 'toggle-mute' }));
+
+    volSlider.addEventListener('input', e =>
+      api.send('mini-player-command', { action: 'volume', value: parseFloat(e.target.value) }));
+
+    seekTrack.addEventListener('click', e => {
+      const rect = seekTrack.getBoundingClientRect();
+      const pct  = ((e.clientX - rect.left) / rect.width) * 100;
+      api.send('mini-player-command', { action: 'seek', value: pct });
+    });
+
+    // ── Receive state updates from main ───────────────────────────────────────
+    api.on('mini-player-state', newState => updateUI(newState));
+
+    // Tell main process we're ready so it can push current state immediately
+    api.send('mini-player-ready');
+  </script>
+</body>
+</html>

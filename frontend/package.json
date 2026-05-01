@@ -37,7 +37,8 @@
     "productName": "OffBeat",
     "files": [
       "dist/**/*",
-      "electron.js"
+      "electron.js",
+      "preload.js"
     ],
     "extraResources": [
       {
