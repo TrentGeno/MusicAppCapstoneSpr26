@@ -2165,3 +2165,24 @@ nav a:hover::after {
   color: white;
   border-color: var(--main-color);
 }
+
+.add-songs-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50px;
+  padding: 8px 18px;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  width: 320px;
+  justify-content: flex-start;
+}
+
+.add-songs-btn:hover {
+  background: rgba(255,255,255,0.14);
+  color: white;
+}
