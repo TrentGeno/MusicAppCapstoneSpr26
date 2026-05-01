@@ -23,8 +23,8 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.2.2",
     "concurrently": "^9.0.0",
-    "electron": "^31.0.0",
-    "electron-builder": "^25.0.0",
+    "electron": "^41.4.0",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -43,7 +43,7 @@
     "extraResources": [
       {
         "from": "../backend/dist/",
-        "to": "./" 
+        "to": "./"
       }
     ],
     "directories": {
