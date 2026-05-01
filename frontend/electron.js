@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, screen } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
@@ -6,6 +6,8 @@ const fs = require('fs');
 
 let backendProcess = null;
 let mainWindow = null;
+let miniPlayerWindow = null;
+let lastMiniPlayerState = null;
 
 // Adjust these to match your Flask backend
 const BACKEND_PORT = 5000;        // change if your backend listens on a different port
@@ -94,8 +96,16 @@ function createWindow() {
     show: false, // Keep hidden until backend is (hopefully) ready
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
     }
+  });
+
+  mainWindow.on('closed', () => {
+    if (miniPlayerWindow && !miniPlayerWindow.isDestroyed()) {
+      miniPlayerWindow.close();
+    }
+    miniPlayerWindow = null;
   });
 
   startBackend();
@@ -115,6 +125,77 @@ function createWindow() {
       });
   });
 }
+
+// ── Mini Player ────────────────────────────────────────────────────────────
+
+function createMiniPlayer() {
+  if (miniPlayerWindow && !miniPlayerWindow.isDestroyed()) {
+    miniPlayerWindow.focus();
+    return;
+  }
+
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const winWidth  = 300;
+  const winHeight = 120;
+
+  miniPlayerWindow = new BrowserWindow({
+    width: winWidth,
+    height: winHeight,
+    x: width  - winWidth  - 20,
+    y: height - winHeight - 20,
+    resizable: false,
+    alwaysOnTop: true,
+    frame: false,
+    skipTaskbar: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  const miniPath = path.join(__dirname, 'dist', 'mini-player.html');
+  miniPlayerWindow.loadFile(miniPath).catch(err => {
+    console.error('Could not load mini-player.html:', err);
+  });
+
+  miniPlayerWindow.on('closed', () => {
+    miniPlayerWindow = null;
+  });
+}
+
+// IPC: open / close mini player
+ipcMain.on('open-mini-player', () => createMiniPlayer());
+
+ipcMain.on('close-mini-player', () => {
+  if (miniPlayerWindow && !miniPlayerWindow.isDestroyed()) {
+    miniPlayerWindow.close();
+  }
+});
+
+// IPC: main renderer pushes playback state → forward to mini player
+ipcMain.on('main-state-update', (_event, state) => {
+  lastMiniPlayerState = state;
+  if (miniPlayerWindow && !miniPlayerWindow.isDestroyed()) {
+    miniPlayerWindow.webContents.send('mini-player-state', state);
+  }
+});
+
+// IPC: mini player is ready → send current state immediately
+ipcMain.on('mini-player-ready', () => {
+  if (lastMiniPlayerState && miniPlayerWindow && !miniPlayerWindow.isDestroyed()) {
+    miniPlayerWindow.webContents.send('mini-player-state', lastMiniPlayerState);
+  }
+});
+
+// IPC: mini player sends a command → forward to main renderer
+ipcMain.on('mini-player-command', (_event, data) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('mini-player-command', data);
+  }
+});
+
+// ── App lifecycle ────────────────────────────────────────────────────────────
 
 app.whenReady()
   .then(createWindow)

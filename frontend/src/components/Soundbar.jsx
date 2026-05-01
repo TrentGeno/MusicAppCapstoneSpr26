@@ -20,7 +20,8 @@ export default function Soundbar({
   globalRepeatMode,
   seek,
   onClose,
-  onOpenVisualizer
+  onOpenVisualizer,
+  onOpenMiniPlayer
 }) {
   const currentSong = library.find(s => s.id === currentSongId);
   const repeatMode = globalRepeatMode || 'none';
@@ -146,6 +147,18 @@ export default function Soundbar({
         >
           <WaveformIcon size={18} color="var(--text-secondary)" />
         </button>
+      {/* Mini player pop-out button (only shown in Electron) */}
+      {window.electronAPI && onOpenMiniPlayer && (
+        <button
+          onClick={onOpenMiniPlayer}
+          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', opacity: 0.6, flexShrink: 0, transition: 'opacity 0.2s', padding: '4px' }}
+          onMouseOver={e => e.currentTarget.style.opacity = 1}
+          onMouseOut={e => e.currentTarget.style.opacity = 0.6}
+          title="Pop out mini player"
+        >
+          ⧉
+        </button>
+      )}
       {/* Close button */}
         <button
           onClick={onClose}
