@@ -24,11 +24,19 @@ from sqlalchemy import text as sa_text
 
 import sys
 
-# Works in both dev and when packaged with PyInstaller
-if getattr(sys, 'frozen', False):
+# Prefer an explicit writable data directory when launched by Electron.
+configured_data_dir = os.environ.get("OFFBEAT_DATA_DIR")
+
+# Works in both dev and when packaged with PyInstaller.
+if configured_data_dir:
+    BASE_DIR = os.path.abspath(configured_data_dir)
+elif getattr(sys, 'frozen', False):
     BASE_DIR = os.path.dirname(sys.executable)
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+os.makedirs(BASE_DIR, exist_ok=True)
+print(f"Using backend BASE_DIR: {BASE_DIR}")
 
 app = Flask(__name__)
 init_db(app, base_dir=BASE_DIR)  # pass BASE_DIR here

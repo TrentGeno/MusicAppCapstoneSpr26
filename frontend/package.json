@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 -d 1000 && electron .\"",
-    "electron:build": "vite build && electron-builder"
+    "electron:prep": "node scripts/prepare-electron-build.cjs",
+    "electron:build": "npm run electron:prep && vite build && electron-builder"
   },
   "dependencies": {
     "jsmediatags": "^3.9.7",

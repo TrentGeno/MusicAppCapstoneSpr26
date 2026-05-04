@@ -16,6 +16,7 @@ const BACKEND_HEALTH_PATH = '/';  // change to e.g. '/health' if you have a heal
 function startBackend() {
   const isPackaged = app.isPackaged;
   const resourcesDir = isPackaged ? process.resourcesPath : path.join(__dirname, '..');
+  const backendDataDir = path.join(app.getPath('userData'), 'backend-data');
   const appPyPath = isPackaged
     ? path.join(resourcesDir, 'backend', 'app.py')
     : path.join(resourcesDir, 'backend', 'app.py');
@@ -26,7 +27,10 @@ function startBackend() {
 
   console.log("Checking for backend script at:", appPyPath);
   console.log("Checking for backend executable at:", backendExePath);
+  console.log("Backend writable data dir:", backendDataDir);
   console.log("Backend logs will be written to:", logPath);
+
+  fs.mkdirSync(backendDataDir, { recursive: true });
 
   // Open the log stream
   const logStream = fs.createWriteStream(logPath, { flags: 'a' });
@@ -40,7 +44,8 @@ function startBackend() {
       env: {
         ...process.env,
         PYTHONUTF8: '1',
-        PYTHONIOENCODING: 'UTF-8'
+        PYTHONIOENCODING: 'UTF-8',
+        OFFBEAT_DATA_DIR: backendDataDir
       }
     });
 
