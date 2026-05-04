@@ -1,6 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, screen } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 
@@ -15,55 +15,93 @@ const BACKEND_HEALTH_PATH = '/';  // change to e.g. '/health' if you have a heal
 
 function startBackend() {
   const isPackaged = app.isPackaged;
- 
-  // Where backend.exe lives
-  const backendDir = isPackaged
-    ? process.resourcesPath
-    : path.join(__dirname, 'release/win-unpacked/resources');
-
-  const exePath = path.join(backendDir, 'backend.exe');
+  const resourcesDir = isPackaged ? process.resourcesPath : path.join(__dirname, '..');
+  const appPyPath = isPackaged
+    ? path.join(resourcesDir, 'backend', 'app.py')
+    : path.join(resourcesDir, 'backend', 'app.py');
+  const backendExePath = path.join(resourcesDir, 'backend.exe');
 
   // Log file in the app's user data folder
   const logPath = path.join(app.getPath('userData'), 'backend.log');
 
-  console.log("Checking for backend at:", exePath);
+  console.log("Checking for backend script at:", appPyPath);
+  console.log("Checking for backend executable at:", backendExePath);
   console.log("Backend logs will be written to:", logPath);
-
-  if (!fs.existsSync(exePath)) {
-    console.error("CRITICAL: backend.exe not found at:", exePath);
-    return;
-  }
 
   // Open the log stream
   const logStream = fs.createWriteStream(logPath, { flags: 'a' });
 
-  // Spawn backend, let stdout/stderr be pipes so we can redirect them
-  backendProcess = spawn(exePath, [], {
-    shell: false,
-    windowsHide: true,
-    cwd: backendDir,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: {
-      ...process.env,
-      PYTHONUTF8: '1',
-      PYTHONIOENCODING: 'UTF-8'
+  const spawnBackend = (command, args, cwdDir) => {
+    backendProcess = spawn(command, args, {
+      shell: false,
+      windowsHide: true,
+      cwd: cwdDir,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        PYTHONUTF8: '1',
+        PYTHONIOENCODING: 'UTF-8'
+      }
+    });
+
+    if (backendProcess.stdout) backendProcess.stdout.pipe(logStream);
+    if (backendProcess.stderr) backendProcess.stderr.pipe(logStream);
+
+    console.log(`Backend process spawned with PID: ${backendProcess.pid}`);
+
+    backendProcess.on('error', (err) => {
+      console.error('Failed to start backend:', err);
+    });
+
+    backendProcess.on('exit', (code, signal) => {
+      console.log(`Backend exited with code ${code}, signal ${signal}`);
+      logStream.end();
+    });
+  };
+
+  const resolvePythonCommand = () => {
+    const pythonCandidates = [
+      process.env.OFFBEAT_PYTHON
+        ? { command: process.env.OFFBEAT_PYTHON, checkArgs: ['--version'], runArgs: [appPyPath], label: 'OFFBEAT_PYTHON' }
+        : null,
+      { command: 'python', checkArgs: ['--version'], runArgs: [appPyPath], label: 'python' },
+      { command: 'py', checkArgs: ['-3', '--version'], runArgs: ['-3', appPyPath], label: 'py -3' }
+    ].filter(Boolean);
+
+    for (const candidate of pythonCandidates) {
+      const check = spawnSync(candidate.command, candidate.checkArgs, {
+        windowsHide: true,
+        stdio: 'ignore'
+      });
+      if (!check.error && check.status === 0) {
+        return candidate;
+      }
     }
-  });
 
-  // Pipe stdout/stderr into log file
-  if (backendProcess.stdout) backendProcess.stdout.pipe(logStream);
-  if (backendProcess.stderr) backendProcess.stderr.pipe(logStream);
+    return null;
+  };
 
-  console.log(`Backend process spawned with PID: ${backendProcess.pid}`);
+  if (fs.existsSync(appPyPath)) {
+    const pythonCmd = resolvePythonCommand();
+    if (!pythonCmd) {
+      console.error('CRITICAL: app.py exists but no Python launcher was found. Install Python 3 or set OFFBEAT_PYTHON.');
+      logStream.end();
+      return;
+    }
 
-  backendProcess.on('error', (err) => {
-    console.error("Failed to start backend:", err);
-  });
+    console.log(`Starting backend from app.py using ${pythonCmd.label}`);
+    spawnBackend(pythonCmd.command, pythonCmd.runArgs, path.dirname(appPyPath));
+    return;
+  }
 
-  backendProcess.on('exit', (code, signal) => {
-    console.log(`Backend exited with code ${code}, signal ${signal}`);
-    logStream.end();
-  });
+  if (fs.existsSync(backendExePath)) {
+    console.log('app.py not found; falling back to backend.exe');
+    spawnBackend(backendExePath, [], path.dirname(backendExePath));
+    return;
+  }
+
+  console.error('CRITICAL: Neither app.py nor backend.exe were found for backend startup.');
+  logStream.end();
 }
 
 function waitForFlask(retries, callback) {

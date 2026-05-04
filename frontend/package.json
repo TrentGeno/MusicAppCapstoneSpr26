@@ -44,14 +44,28 @@
       {
         "from": "../backend/dist/",
         "to": "./"
+      },
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "app.py",
+          "database.py",
+          "models.py",
+          "find_cover.py",
+          "wikipedia_discography.py",
+          "check_metadata.py",
+          "check_tracks.py",
+          "debug_tracks.py",
+          "requirements.txt"
+        ]
       }
     ],
     "directories": {
       "output": "release"
     },
     "win": {
-      "target": "nsis",
-      "sign": null
+      "target": "nsis"
     }
   }
 }
