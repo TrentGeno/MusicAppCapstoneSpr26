@@ -6,7 +6,6 @@ import HomePage from './components/Homepage';
 import Playlist from './Playlists';
 import PlaylistsPage from './components/PlaylistsPage';
 import Soundbar from './components/Soundbar';
-import SignInModal from './components/modals/SignInModal';
 import UploadModal from './components/modals/UploadModal';
 import PlaylistModal from './components/modals/PlaylistModal';
 import CustomizeModal from './components/modals/CustomizeModal';
@@ -30,7 +29,6 @@ export default function App() {
   const [playlistData, setPlaylistData] = useState({ name: '', description: '' });
   const [isDragging, setIsDragging] = useState(false);
   const [globalRepeatMode, setGlobalRepeatMode] = useState('none');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [currentSongId, setCurrentSongId] = useState(null);
@@ -43,10 +41,6 @@ export default function App() {
       accent2: '#05d9ff',
       isDarkMode: true,
     };
-  });
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
   });
 
   const hexToRgb = (hex) => {
@@ -224,13 +218,6 @@ export default function App() {
 
   const openModal = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
-
-  const handleSignOut = () => {
-    setUser(null);
-    setDropdownOpen(false);
-    localStorage.removeItem('user');
-    if (window.google) window.google.accounts.id.disableAutoSelect();
-  };
 
   const toggleMute = () => {
     if (isMuted) {
@@ -456,7 +443,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `hsl(0, 0%, ${theme.isDarkMode ? '5%' : '100%'})`, color: theme.isDarkMode ? '#ffffff' : '#000000', ...themeStyles }}>
-      <Navbar user={user} onSignIn={() => openModal('signin')} onSignOut={handleSignOut} onCustomize={() => openModal('customize')} />
+      <Navbar onCustomize={() => openModal('customize')} />
 
       <main style={{ flex: 1, minHeight: 0, paddingBottom: currentSongId ? '72px' : '0', display: 'flex', flexDirection: 'column', overflow: isVisualizerRoute ? 'hidden' : 'visible' }}>
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -467,25 +454,13 @@ export default function App() {
       <Route path="/playlists/:id" element={<Playlist togglePlay={togglePlay} library={library} playlistQueueRef={playlistQueueRef} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/recently-added" element={<RecentlyAddedPage library={library} togglePlay={togglePlay} playlists={playlists} openModal={openModal} fetchLibrary={fetchLibrary} fetchPlaylists={fetchPlaylists} />} />
       <Route path="/library" element={<LibraryPage library={library} playlists={playlists} togglePlay={togglePlay} currentSongId={currentSongId} fetchLibrary={fetchLibrary} />} />
-      <Route path="/visualizer" element={<div style={{ flex: 1, minHeight: 0, display: 'flex' }}><VisualizerPage currentSong={library.find(s => s.id === currentSongId)} /></div>} />
+      <Route path="/visualizer" element={<div style={{ flex: 1, minHeight: 0, display: 'flex' }}><VisualizerPage currentSong={library.find(s => s.id === currentSongId)} hasSoundbar={Boolean(currentSongId)} /></div>} />
       </Routes>
       </div>
       </main>
 
       {activeModal === "playlist" && (
         <PlaylistModal playlistData={playlistData} setPlaylistData={setPlaylistData} handleCreatePlaylist={handleCreatePlaylist} closeModal={closeModal} />
-      )}
-      {activeModal === "signin" && (
-        <SignInModal
-          handleGoogleSignIn={(response) => {
-            const payload = JSON.parse(atob(response.credential.split(".")[1]));
-            const userData = { email: payload.email, name: payload.name, photoURL: payload.picture };
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
-            closeModal();
-          }}
-          closeModal={closeModal}
-        />
       )}
       {activeModal === 'customize' && (
         <CustomizeModal theme={theme} onSave={handleThemeSave} closeModal={closeModal} />

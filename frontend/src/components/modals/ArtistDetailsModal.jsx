@@ -121,7 +121,7 @@ export default function ArtistDetailsModal({ artist, onClose }) {
     setIsDiscographyLoading(true);
     setDiscographyError('');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     void (async () => {
       try {
@@ -194,7 +194,7 @@ export default function ArtistDetailsModal({ artist, onClose }) {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="artist-modal-photo artist-modal-photo-fallback">🎤</div>
+              <div className="artist-modal-photo artist-modal-photo-fallback">ART</div>
             )}
             <div>
               <h2>{artist.name}</h2>

@@ -20,7 +20,7 @@ export default function ArtistsSection({ library, togglePlay, playlists, fetchLi
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1.5rem', marginBottom: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.04)', borderRadius: '12px' }}>
           {selectedArtist.cover
             ? <img src={selectedArtist.cover} alt={selectedArtist.name} style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-            : <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', flexShrink: 0 }}>🎤</div>
+            : <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 700, letterSpacing: '0.08em', flexShrink: 0 }}>ART</div>
           }
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>Artist</div>
@@ -62,7 +62,7 @@ export default function ArtistsSection({ library, togglePlay, playlists, fetchLi
             >
               {artist.cover
                 ? <img src={artist.cover} alt={artist.name} style={{ width: '100%', aspectRatio: '1', borderRadius: '50%', objectFit: 'cover', marginBottom: '0.75rem' }} />
-                : <div style={{ width: '100%', aspectRatio: '1', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', marginBottom: '0.75rem' }}>🎤</div>
+                : <div style={{ width: '100%', aspectRatio: '1', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '0.75rem' }}>ART</div>
               }
               <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{artist.name}</div>
               <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>{artist.songs.length} songs</div>

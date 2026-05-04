@@ -48,7 +48,7 @@ export default function HomePage({ openModal, library, togglePlay, seek, playlis
         }}>
           {library.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📁</div>
+              <div className="empty-icon">LIB</div>
               <h3>Your library is empty</h3>
               <p className="empty-text">Upload your music files to get started</p>
               <button className="btn btn-primary" onClick={() => openModal('upload')}>Upload Now</button>

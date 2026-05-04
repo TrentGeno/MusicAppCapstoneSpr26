@@ -52,7 +52,7 @@ export default function EditPlaylistModal({ playlist, onClose, onSave }) {
             }}>
               {editData.cover
                 ? <img src={URL.createObjectURL(editData.cover)} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontSize: '2rem' }}>📋</span>
+                : <span style={{ fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.08em' }}>LIST</span>
               }
             </div>
             <label style={{ cursor: 'pointer' }}>

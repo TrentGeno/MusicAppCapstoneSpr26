@@ -170,7 +170,7 @@ export default function LibraryPage({ library, togglePlay, currentSongId, fetchL
           <div className="drill-hero">
             {selected.item.cover
               ? <img src={selected.item.cover} alt={selected.item.name} className="drill-cover" />
-              : <div className="drill-cover-placeholder">💿</div>
+              : <div className="drill-cover-placeholder">ALB</div>
             }
             <div className="drill-info">
               <span className="drill-type">{selected.type}</span>

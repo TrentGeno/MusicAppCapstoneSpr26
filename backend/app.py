@@ -507,6 +507,15 @@ def split_artist_credits(artist_text):
     return unique
 
 
+def track_matches_artist(track_artist_text, normalized_artist_name):
+    if not track_artist_text or not normalized_artist_name:
+        return False
+
+    normalized_target = normalize_artist_name(normalized_artist_name).lower()
+    credits = split_artist_credits(track_artist_text)
+    return any((credit or "").lower() == normalized_target for credit in credits)
+
+
 def compute_age(life_span):
     begin = (life_span or {}).get("begin")
     end = (life_span or {}).get("end")
@@ -1053,11 +1062,14 @@ def get_artist_discography(artist_mbid):
         return jsonify({"error": "Missing required query param: name"}), 400
 
     normalized_artist = normalize_artist_name(artist_name)
-    artist_tracks = Track.query.filter(
+    user_tracks = Track.query.filter(
         Track.user_id == 1,
         Track.artist.isnot(None),
-        Track.artist.ilike(f"{normalized_artist}%")
     ).all()
+    artist_tracks = [
+        track for track in user_tracks
+        if track_matches_artist(track.artist, normalized_artist)
+    ]
 
     # Build owned-album lookup (album title → track metadata).
     owned_albums = {}  # normalized album title → {track_id, stream_url, release_year, cover_art_url}
@@ -1099,11 +1111,15 @@ def get_artist_discography(artist_mbid):
 
     # Fetch MusicBrainz release groups.
     mb_groups = []
-    if artist_mbid and artist_mbid != "unknown":
+    resolved_mbid = artist_mbid
+    if not resolved_mbid or resolved_mbid == "unknown":
+        resolved_mbid = fetch_musicbrainz_artist_mbid(normalized_artist)
+
+    if resolved_mbid and resolved_mbid != "unknown":
         try:
-            mb_groups = fetch_musicbrainz_release_groups(artist_mbid)
+            mb_groups = fetch_musicbrainz_release_groups(resolved_mbid)
         except Exception as e:
-            print(f"MusicBrainz release group fetch failed for {artist_mbid}: {e}")
+            print(f"MusicBrainz release group fetch failed for {resolved_mbid}: {e}")
 
     # Separate albums/EPs from singles (skip compilations/live).
     skip_secondary = {"compilation", "live", "dj-mix", "mixtape/street"}
@@ -1283,11 +1299,14 @@ def get_release_group_tracks(artist_mbid, release_group_id):
     normalized_artist = normalize_artist_name(artist_name) if artist_name else ""
     owned_by_title = {}
     if normalized_artist:
-        artist_tracks = Track.query.filter(
+        user_tracks = Track.query.filter(
             Track.user_id == 1,
             Track.artist.isnot(None),
-            Track.artist.ilike(f"{normalized_artist}%"),
         ).all()
+        artist_tracks = [
+            track for track in user_tracks
+            if track_matches_artist(track.artist, normalized_artist)
+        ]
         for t in artist_tracks:
             if not t.title:
                 continue

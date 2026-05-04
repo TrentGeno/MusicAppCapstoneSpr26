@@ -287,7 +287,7 @@ export default function Playlist({ togglePlay, library, playlistQueueRef, fetchP
                   transition: 'all 0.2s ease',
                   width: 320,
                 }}>
-                  <span style={{ fontSize: '0.9rem', opacity: 0.5, flexShrink: 0 }}>🔍</span>
+                  <span style={{ fontSize: '0.65rem', opacity: 0.6, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Find</span>
                   <input
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
@@ -415,7 +415,7 @@ export default function Playlist({ togglePlay, library, playlistQueueRef, fetchP
       <div className="spotify-table container" style={{ marginTop: 8 }}>
         {(playlist.tracks || []).length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🎧</div>
+            <div className="empty-icon">AUD</div>
             <h3>No songs in this playlist yet</h3>
           </div>
         ) : (

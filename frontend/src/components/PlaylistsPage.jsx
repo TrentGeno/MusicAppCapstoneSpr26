@@ -29,7 +29,7 @@ export default function PlaylistsPage({ playlists, openModal, fetchPlaylists }) 
           background: 'rgba(255,255,255,0.03)', borderRadius: '20px',
           border: '1px dashed rgba(255,255,255,0.1)'
         }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.5 }}>📁</div>
+          <div style={{ fontSize: '1.25rem', marginBottom: '1rem', opacity: 0.65, fontWeight: 700, letterSpacing: '0.08em' }}>LIB</div>
           <h3 style={{ fontFamily: 'Italiana, serif', fontSize: '1.8rem', fontWeight: 400, marginBottom: '0.5rem' }}>
             No playlists yet
           </h3>

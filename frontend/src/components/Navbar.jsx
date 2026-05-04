@@ -1,9 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { useState } from 'react';
 
-export default function Navbar({ user, onSignIn, onSignOut, onCustomize }) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
+export default function Navbar({ onCustomize }) {
   return (
     <header className="header">
       <NavLink to="/" className="logo">OffBeat</NavLink>
@@ -13,32 +10,15 @@ export default function Navbar({ user, onSignIn, onSignOut, onCustomize }) {
         <NavLink className="nav-link" to="/artists">Artists</NavLink>
       </nav>
       <div className="auth-section">
-        {user ? (
-          <div className="user-menu">
-            <div className="user-info" onClick={() => setDropdownOpen(prev => !prev)}>
-              <img
-                src={user.photoURL}
-                alt="user-avatar"
-                referrerPolicy="no-referrer"
-                className="user-avatar"
-              />
-              <span className="user-name">{user.name}</span>
-              <span className="dropdown-arrow">▾</span>
-            </div>
-            {dropdownOpen && (
-              <div className="user-dropdown">
-                <p className="dropdown-email">{user.email}</p>
-                <hr className="dropdown-divider" />
-                <button className="dropdown-customize" onClick={() => { setDropdownOpen(false); onCustomize(); }}>
-                  Customize App
-                </button>
-                <button className="dropdown-signout" onClick={onSignOut}>Sign Out</button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <button className="btn btn-signin" onClick={onSignIn}>Sign In</button>
-        )}
+        <button className="btn btn-signin" onClick={onCustomize}>
+          <span aria-hidden="true" style={{ display: 'inline-flex', marginRight: '0.5rem', verticalAlign: 'middle' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 20h4l10.4-10.4a1.9 1.9 0 0 0 0-2.7L16.1 4.6a1.9 1.9 0 0 0-2.7 0L3 15v5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12.8 5.2l6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          Customize
+        </button>
       </div>
     </header>
   );

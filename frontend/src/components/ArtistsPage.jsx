@@ -100,7 +100,7 @@ export default function ArtistsPage() {
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="artist-card-fallback">🎤</div>
+                  <div className="artist-card-fallback">ART</div>
                 )}
               </div>
 

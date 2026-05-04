@@ -72,7 +72,7 @@ function withAlpha(color, alpha) {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function VisualizerPage({ currentSong }) {
+export default function VisualizerPage({ currentSong, hasSoundbar = false }) {
   const [activeType, setActiveType] = useState("psp-eq");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const activeTypeRef = useRef("psp-eq");
@@ -101,24 +101,17 @@ export default function VisualizerPage({ currentSong }) {
   }, [currentSong?.cover]);
 
   useEffect(() => {
-    const onFullscreenChange = () => {
-      setIsFullscreen(document.fullscreenElement === containerRef.current);
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        setIsFullscreen(false);
+      }
     };
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
-    try {
-      if (document.fullscreenElement === containerRef.current) {
-        await document.exitFullscreen();
-      } else {
-        await containerRef.current.requestFullscreen();
-      }
-    } catch (_) {
-      // Ignore fullscreen request failures (platform/browser restrictions).
-    }
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev);
   };
 
   // Set up Web Audio analyser whenever the audio element changes
@@ -204,7 +197,21 @@ export default function VisualizerPage({ currentSong }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", color: "var(--text-primary)", flex: 1, minHeight: 0 }}>
       {/* Full-page canvas surface */}
-      <div ref={containerRef} style={{ position: "relative", flex: 1, minHeight: 0, overflow: "hidden", background: "rgba(0,0,0,0.35)" }}>
+      <div
+        ref={containerRef}
+        style={{
+          position: isFullscreen ? "fixed" : "relative",
+          top: isFullscreen ? 0 : "auto",
+          left: isFullscreen ? 0 : "auto",
+          right: isFullscreen ? 0 : "auto",
+          bottom: isFullscreen ? (hasSoundbar ? 72 : 0) : "auto",
+          zIndex: isFullscreen ? 998 : "auto",
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
+          background: "rgba(0,0,0,0.35)",
+        }}
+      >
         <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
 
         {/* Overlay controls */}
@@ -240,7 +247,9 @@ export default function VisualizerPage({ currentSong }) {
                   background: "rgba(0,0,0,0.35)",
                   color: "var(--text-primary)",
                   cursor: "pointer",
-                  fontSize: "0.95rem",
+                  fontSize: "1rem",
+                  fontWeight: 700,
+                  lineHeight: 1,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

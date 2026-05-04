@@ -124,8 +124,8 @@ export default function Soundbar({
             {repeatMode === 'all' ? 'All' : repeatMode === 'one' ? 'Current' : 'None'}
           </span>
         </div>
-        <button onClick={toggleMute} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1rem', opacity: 0.8 }}>
-          {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+        <button onClick={toggleMute} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', opacity: 0.8, minWidth: 34 }}>
+          {isMuted || volume === 0 ? 'MUTE' : volume < 0.5 ? 'LOW' : 'VOL'}
         </button>
         <input
           type="range" min="0" max="1" step="0.01"

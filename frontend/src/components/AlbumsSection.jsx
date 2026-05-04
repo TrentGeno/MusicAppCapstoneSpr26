@@ -7,7 +7,7 @@ export default function AlbumsSection({ albums, onSelect }) {
         <div key={i} className="group-card" onClick={() => onSelect({ type: 'album', item })}>
           {item.cover
             ? <img className="group-cover" src={item.cover} alt={item.name} />
-            : <div className="group-cover-placeholder">💿</div>
+            : <div className="group-cover-placeholder">ALB</div>
           }
           <div className="group-name">{item.name}</div>
           <div className="group-sub">{item.artist} · {item.songs.length} songs</div>
