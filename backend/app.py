@@ -4,6 +4,7 @@ import os
 import uuid
 import re
 import time
+import threading
 from html import unescape
 from datetime import date
 from flask import Flask, request, send_from_directory, jsonify
@@ -53,10 +54,14 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["COVER_FOLDER"] = COVER_FOLDER
 
 # Initialize MusicBrainz
-musicbrainzngs.set_useragent("MusicApp", "1.0", "https://github.com/yourusername/musicapp")
+musicbrainzngs.set_useragent("OffBeat", "1.0", "offbeat-music-app@localhost")
 
 MUSICBRAINZ_BASE_URL = "https://musicbrainz.org/ws/2"
-MUSICBRAINZ_USER_AGENT = "MusicApp/1.0 (https://github.com/yourusername/musicapp)"
+MUSICBRAINZ_USER_AGENT = "OffBeat/1.0 ( offbeat-music-app@localhost )"
+
+# Global rate limiter: MusicBrainz allows max 1 request/second.
+_mb_rate_lock = threading.Lock()
+_mb_last_request_time = 0.0
 _artist_profile_cache = {}
 _artist_discography_cache = {}
 
@@ -79,22 +84,38 @@ def _cache_set(cache, key, value, ttl_seconds=3600):
 
 
 def musicbrainz_get_json(path, params=None, timeout=6):
+    global _mb_last_request_time
     query = {"fmt": "json"}
     if params:
         query.update(params)
 
-    try:
-        response = requests.get(
-            f"{MUSICBRAINZ_BASE_URL}{path}",
-            params=query,
-            headers={"User-Agent": MUSICBRAINZ_USER_AGENT},
-            timeout=timeout,
-        )
-        if response.status_code != 200:
-            return None
-        return response.json()
-    except requests.RequestException:
-        return None
+    for attempt in range(4):
+        # Enforce global 1 req/sec rate limit.
+        with _mb_rate_lock:
+            now = time.time()
+            wait = 1.1 - (now - _mb_last_request_time)
+            if wait > 0:
+                time.sleep(wait)
+            _mb_last_request_time = time.time()
+
+        try:
+            response = requests.get(
+                f"{MUSICBRAINZ_BASE_URL}{path}",
+                params=query,
+                headers={"User-Agent": MUSICBRAINZ_USER_AGENT},
+                timeout=timeout,
+            )
+            if response.status_code == 503 or response.status_code == 429:
+                time.sleep(2 ** attempt)  # exponential backoff
+                continue
+            if response.status_code != 200:
+                return None
+            return response.json()
+        except requests.RequestException:
+            if attempt < 3:
+                time.sleep(2 ** attempt)
+            continue
+    return None
 
 
 def wikipedia_get_json(params, timeout=6):
@@ -698,16 +719,72 @@ def fetch_musicbrainz_release_groups(artist_mbid):
     all_groups = []
     limit = 100
     offset = 0
-    first_page = True
 
     while True:
-        if not first_page:
-            time.sleep(1.0)  # respect MusicBrainz 1 req/sec rate limit
-        first_page = False
-
         data = musicbrainz_get_json(
             "/release-group",
             params={"artist": artist_mbid, "limit": limit, "offset": offset},
+            timeout=15,
+        )
+        if not data:
+            break
+
+        page = data.get("release-groups") or []
+        total = data.get("release-group-count", 0)
+
+        for rg in page:
+            title = (rg.get("title") or "").strip()
+            if not title:
+                continue
+            pt = rg.get("primary-type") or ""
+            secondary = [s.lower() for s in (rg.get("secondary-types") or [])]
+            first_date = rg.get("first-release-date") or ""
+            release_year = None
+            if len(first_date) >= 4:
+                try:
+                    release_year = int(first_date[:4])
+                except ValueError:
+                    pass
+            all_groups.append({
+                "id": rg.get("id") or "",
+                "title": title,
+                "primary_type": pt,
+                "secondary_types": secondary,
+                "release_year": release_year,
+            })
+
+        offset += len(page)
+        if offset >= total or not page:
+            break
+
+    _cache_set(_artist_discography_cache, cache_key, all_groups, ttl_seconds=3600)
+    return all_groups
+
+
+def fetch_musicbrainz_release_groups_by_name(artist_name):
+    """
+    Fallback when MBID resolution is unavailable.
+    Queries MusicBrainz release groups by artist name and returns the same shape
+    as fetch_musicbrainz_release_groups so downstream parsing stays unchanged.
+    """
+    normalized_name = normalize_artist_name(artist_name)
+    if not normalized_name:
+        return []
+
+    cache_key = f"mb_rg_name::{normalized_name.lower()}"
+    cached = _cache_get(_artist_discography_cache, cache_key)
+    if cached is not None:
+        return cached
+
+    all_groups = []
+    limit = 100
+    offset = 0
+
+    while True:
+        data = musicbrainz_get_json(
+            "/release-group",
+            params={"query": f'artist:"{normalized_name}"', "limit": limit, "offset": offset},
+            timeout=15,
         )
         if not data:
             break
@@ -783,6 +860,43 @@ def fetch_musicbrainz_artist_mbid(artist_name):
     mbid = best.get("id")
     _cache_set(_artist_profile_cache, cache_key, mbid, ttl_seconds=3600)
     return mbid
+
+
+def fetch_musicbrainz_artist_mbid_fallback(artist_name):
+    """
+    Resilient MBID resolver used by discography route.
+    Keeps the same MusicBrainz source while retrying with a looser query shape.
+    """
+    mbid = fetch_musicbrainz_artist_mbid(artist_name)
+    if mbid:
+        return mbid
+
+    normalized_name = normalize_artist_name(artist_name)
+    if not normalized_name:
+        return None
+
+    data = musicbrainz_get_json(
+        "/artist",
+        params={"query": normalized_name, "limit": 5},
+        timeout=12,
+    )
+    candidates = (data or {}).get("artists") or []
+    if not candidates:
+        return None
+
+    normalized_lower = normalized_name.lower()
+
+    def score_candidate(candidate):
+        try:
+            base_score = int(candidate.get("score") or 0)
+        except (TypeError, ValueError):
+            base_score = 0
+        candidate_name = normalize_artist_name(candidate.get("name") or "").lower()
+        exact_bonus = 50 if candidate_name == normalized_lower else 0
+        return base_score + exact_bonus
+
+    best = max(candidates, key=score_candidate)
+    return best.get("id")
 
 
 GOOGLE_CLIENT_ID = "246868796255-a8bgcc7v21g956ghn2emcreh0ibp51d9.apps.googleusercontent.com"
@@ -1038,7 +1152,7 @@ def get_artists():
         image_url = profile.get("image_url")
 
         payload.append({
-            "mbid": profile.get("mbid"),
+            "mbid": profile.get("mbid") or fetch_musicbrainz_artist_mbid_fallback(info["name"]),
             "wikipedia_title": profile.get("wikipedia_title"),
             "name": profile.get("name") or info["display_name"],
             "age": profile.get("age"),
@@ -1113,13 +1227,18 @@ def get_artist_discography(artist_mbid):
     mb_groups = []
     resolved_mbid = artist_mbid
     if not resolved_mbid or resolved_mbid == "unknown":
-        resolved_mbid = fetch_musicbrainz_artist_mbid(normalized_artist)
+        resolved_mbid = fetch_musicbrainz_artist_mbid_fallback(normalized_artist)
 
     if resolved_mbid and resolved_mbid != "unknown":
         try:
             mb_groups = fetch_musicbrainz_release_groups(resolved_mbid)
         except Exception as e:
             print(f"MusicBrainz release group fetch failed for {resolved_mbid}: {e}")
+    else:
+        try:
+            mb_groups = fetch_musicbrainz_release_groups_by_name(normalized_artist)
+        except Exception as e:
+            print(f"MusicBrainz release group name-based fetch failed for {normalized_artist}: {e}")
 
     # Separate albums/EPs from singles (skip compilations/live).
     skip_secondary = {"compilation", "live", "dj-mix", "mixtape/street"}
@@ -1269,7 +1388,7 @@ def get_release_group_tracks(artist_mbid, release_group_id):
         )
 
         if not data or not data.get("releases"):
-            return jsonify({"error": "No release found for this release group"}), 404
+            return jsonify({"tracks": []}), 200
 
         # Prefer releases with the most tracks (avoid single-disc partial releases).
         releases = data["releases"]
